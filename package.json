@@ -1,0 +1,27 @@
+{
+    "name": "bullshitbingo-js",
+    "version": "1.0.0",
+    "description": "HTML5 / NodeJS Bullshitbingo",
+    "main": "app.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/SWW13/bullshitbingo-js.git"
+    },
+    "author": "Simon Wörner",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/SWW13/bullshitbingo-js/issues"
+    },
+    "homepage": "https://github.com/SWW13/bullshitbingo-js",
+    "private": "true",
+    "scripts": {
+        "start": "node bingo"
+    },
+    "dependencies": {
+        "config": "*",
+        "finalhandler": "*",
+        "http": "*",
+        "nodejs-websocket": "*",
+        "serve-static": "*"
+    }
+}

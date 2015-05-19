@@ -1,0 +1,10 @@
+{
+    "http": {
+        "hostname": "127.0.0.1",
+        "port": "3232"
+    },
+    "websocket": {
+        "hostname": "127.0.0.1",
+        "port": "3233"
+    }
+}
