@@ -1,3 +1,5 @@
-/**
- * Created by simon on 19.05.15.
- */
+var dom = {
+    content: document.getElementById('content')
+};
+
+dom.content.innerHTML = templates['home'].render({username: ''});
