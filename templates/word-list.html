@@ -1,0 +1,37 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Wordlist</h3>
+    </div>
+    <div class="panel-body">
+        {{#words}}
+            <div class="col-sm-2">
+                {{.}}
+                <a class="button-delete" href="#" data-word="{{word}}">
+                    <i class="fa fa-trash-o"></i>
+                </a>
+            </div>
+        {{/words}}
+    </div>
+</div>
+<div>
+    <h2>
+        Wordlist
+    </h2>
+    <table id="wordlist" class="table table-striped">
+        <tbody>
+        {{#words}}
+        <tr>
+            <td>
+                {{name}}
+                <span class="badge">{{user}}</span>
+            </td>
+            <td>
+                <a class="button-delete" href="#" data-word="{{word}}">
+                    <i class="fa fa-trash-o"></i>
+                </a>
+            </td>
+        </tr>
+        {{/words}}
+        </tbody>
+    </table>
+</div>

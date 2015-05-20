@@ -16,7 +16,7 @@
     "private": "true",
     "scripts": {
         "start": "node bingo",
-        "compile": "node bin/hulk templates/* --outputdir templates/out/ && bin/templates.sh templates/out public/assets/js/tempaltes.js"
+        "compile": "rm -f templates/out/* && node bin/hulk templates/* --outputdir templates/out/ && bin/templates.sh templates/out public/assets/js/tempaltes.js"
     },
     "dependencies": {
         "config": "*",

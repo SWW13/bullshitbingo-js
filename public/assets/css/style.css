@@ -4,3 +4,7 @@ body {
 #content {
     padding: 40px 15px;
 }
+
+#wordlist tr td:last-child {
+    text-align: right;
+}
