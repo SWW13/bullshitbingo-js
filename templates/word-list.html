@@ -35,4 +35,17 @@
 
         </form>
     </div>
+    <div>
+        <h3>Last Words</h3>
+        <div class="panel-body">
+            {{#last_words}}
+            <span style="margin-right: 35px;">
+                {{.}}
+                <a class="button-add" href="#" data-word="{{.}}">
+                    <i class="fa fa-plus-square"></i>
+                </a>
+            </span>
+            {{/last_words}}
+        </div>
+    </div>
 </div>
