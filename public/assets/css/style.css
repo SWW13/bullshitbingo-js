@@ -8,3 +8,12 @@ body {
 #wordlist tr td:last-child {
     text-align: right;
 }
+
+#board tr td button {
+    width: 100%;
+}
+
+.board-other-container {
+    float: left;
+    margin-right: 25px;
+}

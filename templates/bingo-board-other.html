@@ -1,0 +1,23 @@
+<div>
+    <h2>
+        Other Users
+    </h2>
+    {{#players}}
+    <div class="board-other-container bg-{{status}}">
+        {{name}}
+        <table class="board-other" class="table table-bordered">
+            <tbody>
+            {{#lines}}
+            <tr>
+                {{#.}}
+                <td class="bg-{{class}}">
+                    ╳
+                </td>
+                {{/.}}
+            </tr>
+            {{/lines}}
+            </tbody>
+        </table>
+    </div>
+    {{/players}}
+</div>

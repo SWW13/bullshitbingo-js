@@ -1,0 +1,20 @@
+<div>
+    <h2>
+        💩bingo Board
+    </h2>
+    <table id="board" class="table table-bordered">
+        <tbody>
+        {{#lines}}
+        <tr>
+            {{#.}}
+            <td>
+                <button type="button" class="btn btn-default btn-{{class}} button-word" data-word="{{word}}">
+                    {{name}}
+                </button>
+            </td>
+            {{/.}}
+        </tr>
+        {{/lines}}
+        </tbody>
+    </table>
+</div>
