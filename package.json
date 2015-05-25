@@ -15,10 +15,13 @@
     "homepage": "https://github.com/SWW13/bullshitbingo-js",
     "private": "true",
     "scripts": {
-        "start": "node bingo",
-        "compile": "rm -f templates/out/* && node bin/hulk templates/* --outputdir templates/out/ && bin/templates.sh templates/out public/assets/js/tempaltes.js"
+        "start": "node app",
+        "compile": "npm run compile-templates && npm run compile-modules",
+        "compile-templates": "rm -f templates/out/* && node bin/hulk templates/* --outputdir templates/out/ && bin/templates.sh templates/out public/assets/js/tempaltes.js",
+        "compile-modules": "node_modules/browserify/bin/cmd.js app-client.js > public/assets/js/app.js"
     },
     "dependencies": {
+        "browserify": "*",
         "config": "*",
         "finalhandler": "*",
         "hogan.js": "3.0.2",

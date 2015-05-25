@@ -1,6 +1,10 @@
 var config = require('config');
 var ws = require('nodejs-websocket');
 
+var BSBingo = require('./modules/BSBingo.js');
+var BSUser = require('./modules/BSUser.js');
+var BSMessage = require('./modules/BSMessage.js');
+
 // serve public folder
 var http_config = config.get('http');
 if(http_config !== false) {
@@ -14,14 +18,24 @@ if(http_config !== false) {
     }).listen(http_config.port, http_config.hostname);
 }
 
+// bingo
+var user = new BSUser(true);
+var bingo = new BSBingo(user);
+
+// websocket
 var websocket_config = config.get('websocket');
 var server = ws.createServer(function (conn) {
-    console.log('New connection')
-    conn.on('text', function (str) {
-        console.log('Received '+str)
-        conn.sendText(str.toUpperCase()+'!!!')
-    })
+    console.log('New connection');
+
+    conn.on('text', function (msg) {
+        var result = bingo.onMessage(msg);
+
+        if(result !== undefined && result instanceof BSMessage) {
+            conn.sendText(msg.toString());
+        }
+    });
+
     conn.on('close', function (code, reason) {
-        console.log('Connection closed')
-    })
-}).listen(websocket_config.port, websocket_config.hostname)
+        console.log('Connection closed');
+    });
+}).listen(websocket_config.port, websocket_config.hostname);
