@@ -1,13 +1,13 @@
 var Utils = require('./Utils.js');
 
-function BSUser(server) {
+function BSUser(server, fromString) {
     this.id = null;
     this.name = null;
 
     if(server !== undefined && server === true) {
         this.id = 'server';
         this.name = 'server';
-    } else {
+    } else if(fromString === undefined || fromString === false) {
         this.load();
     }
 }
@@ -33,20 +33,20 @@ BSUser.prototype.getName = function () {
 BSUser.prototype.load = function () {
     if(typeof(Storage) !== "undefined") {
         var user = localStorage.user;
+        this.id = null;
+        this.name = null;
 
         if(user !== undefined && user !== null) {
             if(user.id !== undefined && user.id !== null) {
                 this.id = user.id;
-            } else {
-                this.id = Utils.generateUUID();
-                console.log('BSUser: created new user uuid: ' + this.id);
             }
 
             if(user.name !== undefined) {
                 this.name = user.name;
-            } else {
-                this.name = null;
             }
+        } else {
+            this.id = Utils.generateUUID();
+            console.log('BSUser: created new user uuid: ' + this.id);
         }
     } else {
         console.warn('BSUser.load: LocalStorage not available.');
@@ -62,5 +62,25 @@ BSUser.prototype.save = function () {
         console.warn('BSUser.save: LocalStorage not available.');
     }
 };
+
+BSUser.prototype.toString = function() {
+    return JSON.stringify({
+        id: this.id,
+        name: this.name
+    });
+};
+BSUser.fromString = function(user) {
+    if(user !== undefined && user !== null) {
+        if(typeof(user) === "string") {
+            user = JSON.parse(user);
+        }
+        var bs_user = new BSUser(false, true);
+        bs_user.id = user.id;
+        bs_user.name = user.name;
+
+        return bs_user;
+    }
+    return null;
+}
 
 module.exports = BSUser;

@@ -25,6 +25,7 @@
         "config": "*",
         "finalhandler": "*",
         "hogan.js": "3.0.2",
+        "minibus": "*",
         "mkdirp": "*",
         "nodejs-websocket": "*",
         "nopt": "*",

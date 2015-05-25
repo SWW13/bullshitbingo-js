@@ -1,10 +1,25 @@
 var BSMessage = require('./BSMessage');
 
-function BSBingo(user) {
+function BSBingo(bus, user) {
+    this.bus = bus;
     this.players = [];
     this.games = [];
     this.last_words = [];
     this.user = user;
+
+    var that = this;
+    this.bus.on('messageReceived', function(msg){
+        that.onMessage(msg);
+    });
+    this.bus.on('actionReceived', function(msg){
+        that.onAction(msg);
+    });
+    this.bus.on('eventReceived', function(msg){
+        that.onEvent(msg);
+    });
+    this.bus.on('dataReceived', function(msg){
+        that.onData(msg);
+    });
 }
 
 BSBingo.prototype.isServer = function() {
@@ -14,20 +29,15 @@ BSBingo.prototype.isServer = function() {
 BSBingo.prototype.onMessage = function(msg_data) {
     var msg = BSMessage.fromString(msg_data);
 
-    if(msg.isEmpty()) {
-        console.warn('BSBingo.onMessage(msg): empty message');
-        return false;
-    }
-
     switch(msg.type) {
-        case 'action':
-            return this.onAction(msg);
-            break;
         case 'event':
-            return this.onEvent(msg);
+            return this.bus.emit('eventReceived', msg);
+            break;
+        case 'action':
+            return this.bus.emit('actionReceived', msg);
             break;
         case 'data':
-            return this.onData(msg);
+            return this.bus.emit('dataReceived', msg);
             break;
 
         default:
@@ -37,9 +47,13 @@ BSBingo.prototype.onMessage = function(msg_data) {
     }
 };
 BSBingo.prototype.onAction = function(msg) {
-    switch(msg.action) {
+    switch(msg.name) {
         case 'getData':
-            return new BSMessage('data', 'BSBingo', this.user, this.getData());
+            this.bus.emit('messageSend', new BSMessage('data', 'BSBingo', this.user.id, msg.sender, this.getData()));
+            break;
+
+        case 'getUser':
+            this.bus.emit('messageSend', new BSMessage('data', 'user', this.user.id, msg.sender, this.user.toString()));
             break;
 
         default:
