@@ -1,33 +1,27 @@
-var BSBingo = require('./modules/BSBingo.js');
+var BSClient = require('./modules/BSClient.js');
 var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 
-var bus = Minibus.create();
-var user = new BSUser(false);
-var bingo = new BSBingo(bus, user);
+var ws = null, bingo = null;
 
-var ws = new WebSocket(config.websocket.url, config.websocket.protocols);
-var sendEvent = null;
+function connect() {
+    ws = new WebSocket(config.websocket.url, config.websocket.protocols);
+    ws.onopen = onOpen;
+    ws.onmessage = onMessage;
+    ws.onclose = onClose;
+}
 
-ws.onopen = function (event) {
-    console.dir(event);
-
-    sendEvent = bus.on('messageSend', function(msg){
-        ws.send(msg.toString());
-    });
-
-    var msg = new BSMessage('action', 'getData', user.id, 'server', 'BSBingo');
-    ws.send(msg.toString());
+function onOpen (event) {
+    bingo = new BSClient(ws);
+    console.log(event);
 };
-ws.onmessage = function (event) {
-    console.dir(event);
-
+function onMessage (event) {
     bingo.onMessage(event.data);
-    console.dir(bingo);
+    console.log(event);
 }
-ws.onclose = function(event) {
-    console.dir(event);
+function onClose(event) {
+    window.setTimeout(connect, 500);
+    console.log(event);
+}
 
-    bus.off(sendEvent);
-    alert('TODO: connection broken.');
-}
+connect();

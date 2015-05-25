@@ -1,7 +1,7 @@
 var config = require('config');
 var ws = require('nodejs-websocket');
 
-var BSBingo = require('./modules/BSBingo.js');
+var BSServer = require('./modules/BSServer.js');
 var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 var Minibus = require('minibus');
@@ -21,27 +21,26 @@ if(http_config !== false) {
 
 // bingo
 var bus = Minibus.create();
-var user = new BSUser(true);
-var bingo = new BSBingo(bus, user);
+var bingo = new BSServer(bus);
 
 // websocket
 var websocket_config = config.get('websocket');
 var server = ws.createServer(function (conn) {
     console.log('# New connection');
     bus.emit('connectionNew');
-    var client = null, sendEvent = null;
+    var user = null, sendEvent = null;
 
     conn.on('text', function (data) {
         var msg = BSMessage.fromString(data);
 
         console.dir(msg);
-        bus.emit('messageReceived', msg);
+        bingo.onMessage(msg);
 
         // TODO: not working
-        if(msg.is('data', 'user')) {
-            client = BSUser.fromString(msg.data);
-            console.dir(client);
-            bus.emit('connectionOpened', client);
+        if(msg.type === 'data' && msg.name === 'user') {
+            user = msg.data;
+            console.dir(user);
+            bus.emit('connectionOpened', user);
         }
     });
 
@@ -52,11 +51,11 @@ var server = ws.createServer(function (conn) {
     });
 
     sendEvent = bus.on('messageSend', function(msg){
-        if(msg.receiver === null || client === null || msg.receiver === client.id) {
+        if(msg.receiver === null || user === null || msg.receiver === user.id) {
             conn.sendText(msg.toString());
             console.dir(msg);
         }
     });
 
-    conn.sendText(new BSMessage('action', 'getUser', user.id, null, null).toString());
+    conn.sendText(new BSMessage('action', 'getUser', 'server', null, null).toString());
 }).listen(websocket_config.port, websocket_config.hostname);

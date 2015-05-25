@@ -1,84 +1,137 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var BSMessage = require('./BSMessage');
+var BSUser = require('./BSUser');
+var Utils = require('./Utils.js');
 
-function BSBingo(bus, user) {
-    this.bus = bus;
-    this.players = [];
+function BSClient(ws) {
+    this.ws = ws;
     this.games = [];
     this.last_words = [];
-    this.user = user;
+    this.user = new BSUser();
+    this.game = null;
 
-    var that = this;
-    this.bus.on('messageReceived', function(msg){
-        that.onMessage(msg);
-    });
-    this.bus.on('actionReceived', function(msg){
-        that.onAction(msg);
-    });
-    this.bus.on('eventReceived', function(msg){
-        that.onEvent(msg);
-    });
-    this.bus.on('dataReceived', function(msg){
-        that.onData(msg);
-    });
+    this.ws.send(new BSMessage('action', 'user', this.user.id, 'server', this.user.toString()).toString());
+    this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
 }
 
-BSBingo.prototype.isServer = function() {
-    return user.isServer();
-};
-
-BSBingo.prototype.onMessage = function(msg_data) {
+BSClient.prototype.onMessage = function(msg_data) {
     var msg = BSMessage.fromString(msg_data);
+
+    if(msg.sender === this.user.id) {
+        return true;
+    }
 
     switch(msg.type) {
         case 'event':
-            return this.bus.emit('eventReceived', msg);
+            this.onEvent(msg);
             break;
         case 'action':
-            return this.bus.emit('actionReceived', msg);
+            this.onAction(msg);
             break;
         case 'data':
-            return this.bus.emit('dataReceived', msg);
+            this.onData(msg);
             break;
 
         default:
-            console.warn('BSBingo.onMessage(msg): unknown type: ' + msg.type);
+            console.warn('BSClient.onMessage(msg): unknown type: ' + msg.type);
             return false;
             break;
     }
 };
-BSBingo.prototype.onAction = function(msg) {
+BSClient.prototype.onAction = function(msg) {
+    return false;
+};
+BSClient.prototype.onEvent = function(msg) {
     switch(msg.name) {
-        case 'getData':
-            this.bus.emit('messageSend', new BSMessage('data', 'BSBingo', this.user.id, msg.sender, this.getData()));
-            break;
-
-        case 'getUser':
-            this.bus.emit('messageSend', new BSMessage('data', 'user', this.user.id, msg.sender, this.user.toString()));
+        case 'newGame':
+            this.games[msg.data.id] = msg.data;
             break;
 
         default:
-            console.warn('BSBingo.onAction(msg): unknown action: ' + msg.action);
+            console.warn('BSClient.onEvent(msg): unknown name: ' + msg.name);
             return false;
             break;
     }
 };
-BSBingo.prototype.onEvent = function(msg) {
-    return false;
-};
-BSBingo.prototype.onData = function(msg) {
-    return false;
+BSClient.prototype.onData = function(msg) {
+    switch(msg.name) {
+        case 'BSServer':
+            this.fromString(msg.data);
+            this.render();
+            break;
+
+        default:
+            console.warn('BSClient.onData(msg): unknown name: ' + msg.name);
+            return false;
+            break;
+    }
 };
 
-BSBingo.prototype.getData = function() {
-    return {
-        games: this.games,
-        last_words: this.last_words
+BSClient.prototype.fromString = function(data) {
+    if(data !== undefined) {
+        this.games = [];
+        for(var i = 0; i < data.games.length; i++){
+            this.games.push(BSGame.fromString(data.games[i]));
+        }
+
+        this.last_words = [];
+        for(var i = 0; i < data.last_words.length; i++){
+            this.last_words.push(BSGame.fromString(data.last_words[i]));
+        }
+    }
+};
+
+BSClient.prototype.render = function() {
+    var content = document.getElementById('content');
+    var navbar = document.getElementById('navbar');
+
+    navbar.innerHTML = templates['navbar'].render({game: this.game});
+
+    if(this.game === null) {
+        content.innerHTML = templates['create-game'].render({username: this.user.name});
+        content.innerHTML += templates['game-list'].render({games: this.toString().games});
+
+        var that = this;
+        var create_game = document.getElementById('create-game');
+        create_game.addEventListener('click', function(){
+            that.createGame();
+        });
+    }
+    else {
+        switch(this.game.state) {
+            case 'words':
+                content.innerHTML = templates['word-list'].render({words: this.game.words, last_words: this.last_words});
+                break;
+
+            default:
+                console.warn('Uknown state: ' + this.game.state);
+                break;
+        }
+    }
+};
+
+BSClient.prototype.createGame = function() {
+    var username = document.getElementById('username').value;
+    var game = document.getElementById('game').value;
+    var width = document.getElementById('width').value;
+    var height = document.getElementById('height').value;
+
+    this.user.setName(username);
+    this.game = {
+        id: Utils.generateUUID(),
+        name: game,
+        width: width,
+        height: height,
+        state: 'words',
+        user: this.user.toString()
     };
+
+    this.ws.send(new BSMessage('event', 'newGame', this.user.id, 'server', this.game));
+    this.render();
 };
 
-module.exports = BSBingo;
-},{"./BSMessage":2}],2:[function(require,module,exports){
+module.exports = BSClient;
+},{"./BSMessage":2,"./BSUser":3,"./Utils.js":4}],2:[function(require,module,exports){
 function BSMessage(type, name, sender, receiver, data) {
     this.type = 'unknown';
     this.name = 'unknown';
@@ -138,21 +191,12 @@ module.exports = BSMessage;
 },{}],3:[function(require,module,exports){
 var Utils = require('./Utils.js');
 
-function BSUser(server, fromString) {
-    this.id = null;
+function BSUser() {
+    this.id = Utils.generateUUID();
     this.name = null;
 
-    if(server !== undefined && server === true) {
-        this.id = 'server';
-        this.name = 'server';
-    } else if(fromString === undefined || fromString === false) {
-        this.load();
-    }
+    this.load();
 }
-
-BSUser.prototype.isServer = function () {
-    return this.id === 'server';
-};
 
 BSUser.prototype.setName = function (name) {
     if(name !== undefined) {
@@ -160,6 +204,7 @@ BSUser.prototype.setName = function (name) {
         this.save();
     }
 };
+/*
 BSUser.prototype.getName = function () {
     if(this.name !== undefined && this.name !== null) {
         return this.name;
@@ -167,10 +212,11 @@ BSUser.prototype.getName = function () {
         return 'Unknown User (' + this.id + ')';
     }
 };
+*/
 
 BSUser.prototype.load = function () {
     if(typeof(Storage) !== "undefined") {
-        var user = localStorage.user;
+        var user = JSON.parse(localStorage.user);
         this.id = null;
         this.name = null;
 
@@ -192,10 +238,7 @@ BSUser.prototype.load = function () {
 };
 BSUser.prototype.save = function () {
     if(typeof(Storage) !== "undefined") {
-        localStorage.user = {
-            id: this.id,
-            name: this.name
-        };
+        localStorage.user = this.toString();
     } else {
         console.warn('BSUser.save: LocalStorage not available.');
     }
@@ -207,6 +250,7 @@ BSUser.prototype.toString = function() {
         name: this.name
     });
 };
+/*
 BSUser.fromString = function(user) {
     if(user !== undefined && user !== null) {
         if(typeof(user) === "string") {
@@ -220,6 +264,7 @@ BSUser.fromString = function(user) {
     }
     return null;
 }
+*/
 
 module.exports = BSUser;
 },{"./Utils.js":4}],4:[function(require,module,exports){
@@ -236,37 +281,31 @@ module.exports = {
     }
 };
 },{}],5:[function(require,module,exports){
-var BSBingo = require('./modules/BSBingo.js');
+var BSClient = require('./modules/BSClient.js');
 var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 
-var bus = Minibus.create();
-var user = new BSUser(false);
-var bingo = new BSBingo(bus, user);
+var ws = null, bingo = null;
 
-var ws = new WebSocket(config.websocket.url, config.websocket.protocols);
-var sendEvent = null;
+function connect() {
+    ws = new WebSocket(config.websocket.url, config.websocket.protocols);
+    ws.onopen = onOpen;
+    ws.onmessage = onMessage;
+    ws.onclose = onClose;
+}
 
-ws.onopen = function (event) {
-    console.dir(event);
-
-    sendEvent = bus.on('messageSend', function(msg){
-        ws.send(msg.toString());
-    });
-
-    var msg = new BSMessage('action', 'getData', user.id, 'server', 'BSBingo');
-    ws.send(msg.toString());
+function onOpen (event) {
+    bingo = new BSClient(ws);
+    console.log(event);
 };
-ws.onmessage = function (event) {
-    console.dir(event);
-
+function onMessage (event) {
     bingo.onMessage(event.data);
-    console.dir(bingo);
+    console.log(event);
 }
-ws.onclose = function(event) {
-    console.dir(event);
+function onClose(event) {
+    window.setTimeout(connect, 500);
+    console.log(event);
+}
 
-    bus.off(sendEvent);
-    alert('TODO: connection broken.');
-}
-},{"./modules/BSBingo.js":1,"./modules/BSMessage.js":2,"./modules/BSUser.js":3}]},{},[5]);
+connect();
+},{"./modules/BSClient.js":1,"./modules/BSMessage.js":2,"./modules/BSUser.js":3}]},{},[5]);

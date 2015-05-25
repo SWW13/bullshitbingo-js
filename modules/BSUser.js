@@ -1,20 +1,11 @@
 var Utils = require('./Utils.js');
 
-function BSUser(server, fromString) {
-    this.id = null;
+function BSUser() {
+    this.id = Utils.generateUUID();
     this.name = null;
 
-    if(server !== undefined && server === true) {
-        this.id = 'server';
-        this.name = 'server';
-    } else if(fromString === undefined || fromString === false) {
-        this.load();
-    }
+    this.load();
 }
-
-BSUser.prototype.isServer = function () {
-    return this.id === 'server';
-};
 
 BSUser.prototype.setName = function (name) {
     if(name !== undefined) {
@@ -22,6 +13,7 @@ BSUser.prototype.setName = function (name) {
         this.save();
     }
 };
+/*
 BSUser.prototype.getName = function () {
     if(this.name !== undefined && this.name !== null) {
         return this.name;
@@ -29,10 +21,11 @@ BSUser.prototype.getName = function () {
         return 'Unknown User (' + this.id + ')';
     }
 };
+*/
 
 BSUser.prototype.load = function () {
     if(typeof(Storage) !== "undefined") {
-        var user = localStorage.user;
+        var user = JSON.parse(localStorage.user);
         this.id = null;
         this.name = null;
 
@@ -54,10 +47,7 @@ BSUser.prototype.load = function () {
 };
 BSUser.prototype.save = function () {
     if(typeof(Storage) !== "undefined") {
-        localStorage.user = {
-            id: this.id,
-            name: this.name
-        };
+        localStorage.user = this.toString();
     } else {
         console.warn('BSUser.save: LocalStorage not available.');
     }
@@ -69,6 +59,7 @@ BSUser.prototype.toString = function() {
         name: this.name
     });
 };
+/*
 BSUser.fromString = function(user) {
     if(user !== undefined && user !== null) {
         if(typeof(user) === "string") {
@@ -82,5 +73,6 @@ BSUser.fromString = function(user) {
     }
     return null;
 }
+*/
 
 module.exports = BSUser;
