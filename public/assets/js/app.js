@@ -12,6 +12,12 @@ function BSClient(ws) {
 
     this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
     this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
+
+    var that = this;
+    document.getElementById('menu-logo').addEventListener('click', function(event){
+        that.game = null;
+        that.render();
+    });
 }
 
 BSClient.prototype.onMessage = function(msg_data) {
@@ -122,10 +128,19 @@ BSClient.prototype.render = function() {
     else {
         switch(this.game.stage) {
             case 'words':
-                content.innerHTML = templates['word-list'].render({words: this.game.words, last_words: this.last_words});
+                var wordlist = document.getElementById('wordlist');
+                if(wordlist === null) {
+                    content.innerHTML = templates['words'].render({last_words: this.last_words});
+                    wordlist = document.getElementById('wordlist')
+                }
+                wordlist.innerHTML = templates['wordlist'].render({words: this.game.words});
+                var word = document.getElementById('word');
+                word.focus();
                 var button_addWord = document.getElementById('button-addWord');
                 button_addWord.addEventListener('click', function(event){
+                    event.preventDefault();
                     that.addWord(document.getElementById('word').value);
+                    document.getElementById('word').value = '';
                 });
                 var button_addLastWord = document.getElementsByClassName('button-addLastWord');
                 for(var i = 0; i < button_addLastWord.length; i++) {
@@ -138,6 +153,19 @@ BSClient.prototype.render = function() {
                     button_removeWord[i].addEventListener('click', function(event){
                         that.removeWord(this.dataset.word);
                         console.log(event);
+                    });
+                }
+                break;
+
+            case 'bingo':
+                content.innerHTML = templates['bingo-board'].render({lines: this.getBoard()});
+                content.innerHTML += templates['bingo-board-overview'].render({players: this.getBoardOverview()});
+
+                var button_buzzWord = document.getElementsByClassName('button-buzzWord');
+                for(var i = 0; i < button_buzzWord.length; i++) {
+                    button_buzzWord[i].addEventListener('click', function(event){
+                        event.preventDefault();
+                        that.buzzWord(this.dataset.word);
                     });
                 }
                 break;
@@ -163,6 +191,7 @@ BSClient.prototype.createGame = function() {
         height: height,
         stage: 'words',
         words: [],
+        boards: {},
         players: [this.user.toObject()],
         user: this.user.toObject()
     };
@@ -171,6 +200,15 @@ BSClient.prototype.createGame = function() {
     this.render();
 };
 BSClient.prototype.joinGame = function(event) {
+    while(typeof(this.user.name) !== "string" || this.user.name.length < 1) {
+        var name = prompt('Please enter your username:');
+
+        if(typeof(name) === "string") {
+            this.user.setName(name);
+            this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
+        }
+    }
+
     this.game = this.games[event.target.dataset.id];
     this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: this.game.id}));
     this.render();
@@ -184,6 +222,47 @@ BSClient.prototype.addWord = function(word) {
 BSClient.prototype.removeWord = function(word) {
     this.ws.send(new BSMessage('event', 'removeWord', this.user.id, 'server', {game_id: this.game.id, word: word}));
     this.render();
+};
+BSClient.prototype.buzzWord = function(word) {
+    if(word !== '') {
+        this.ws.send(new BSMessage('event', 'buzzWord', this.user.id, 'server', {game_id: this.game.id, word: word}));
+        this.render();
+    }
+};
+BSClient.prototype.getBoard = function() {
+    return this.getLines(this.game.boards[this.user.id]);
+};
+BSClient.prototype.getBoardOverview = function() {
+    var players = this.game.players;
+    var boards = [];
+
+    for(var i = 0; i < players.length; i++) {
+        boards.push({
+            id: players[i].id,
+            name: players[i].name,
+            lines: this.getLines(this.game.boards[players[i].id])
+        });
+    }
+
+    return boards;
+};
+BSClient.prototype.getLines = function(board) {
+    var lines = [];
+    var line = [];
+    for(var i = 0; i < board.length; i++) {
+        if(i % this.game.width === 0 && i > 0) {
+            lines.push(line);
+            line = [];
+        }
+
+        line.push({
+            word: board[i].word,
+            css_class: (board[i].active ? 'primary' : 'default')
+        });
+    }
+    lines.push(line);
+
+    return lines;
 };
 
 module.exports = BSClient;
@@ -272,9 +351,13 @@ BSUser.prototype.getName = function () {
 
 BSUser.prototype.load = function () {
     if(typeof(Storage) !== "undefined") {
-        var user = JSON.parse(localStorage.user);
+        var user = localStorage.user;
         this.id = null;
         this.name = null;
+
+        if(user !== undefined) {
+            user = JSON.parse(localStorage.user);
+        }
 
         if(user !== undefined && user !== null) {
             if(user.id !== undefined && user.id !== null) {
@@ -337,6 +420,24 @@ module.exports = {
         });
 
         return uuid;
+    },
+    shuffle: function(array) {
+        var currentIndex = array.length, temporaryValue, randomIndex;
+
+        // While there remain elements to shuffle...
+        while (0 !== currentIndex) {
+
+            // Pick a remaining element...
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            // And swap it with the current element.
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+
+        return array;
     }
 };
 },{}],5:[function(require,module,exports){

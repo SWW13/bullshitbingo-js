@@ -2,23 +2,7 @@
     <h2>
         Wordlist
     </h2>
-    <table id="wordlist" class="table table-striped">
-        <tbody>
-        {{#words}}
-        <tr>
-            <td>
-                {{word}}
-                <span class="badge">{{user.name}}</span>
-            </td>
-            <td>
-                <a class="button-removeWord" href="#" data-word="{{word}}">
-                    <i class="fa fa-trash-o"></i>
-                </a>
-            </td>
-        </tr>
-        {{/words}}
-        </tbody>
-    </table>
+    <table id="wordlist" class="table table-striped"></table>
     <div>
         <form class="form-horizontal">
             <div class="row">
@@ -40,8 +24,8 @@
         <div class="panel-body">
             {{#last_words}}
             <span style="margin-right: 35px;">
-                {{.}}
-                <a class="button-addLastWord" href="#" data-word="{{.}}">
+                {{word}}
+                <a class="button-addLastWord" href="#" data-word="{{word}}">
                     <i class="fa fa-plus-square"></i>
                 </a>
             </span>

@@ -25,9 +25,13 @@ BSUser.prototype.getName = function () {
 
 BSUser.prototype.load = function () {
     if(typeof(Storage) !== "undefined") {
-        var user = JSON.parse(localStorage.user);
+        var user = localStorage.user;
         this.id = null;
         this.name = null;
+
+        if(user !== undefined) {
+            user = JSON.parse(localStorage.user);
+        }
 
         if(user !== undefined && user !== null) {
             if(user.id !== undefined && user.id !== null) {
