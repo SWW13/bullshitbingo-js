@@ -10,7 +10,7 @@ function BSClient(ws) {
     this.user = new BSUser();
     this.game = null;
 
-    this.ws.send(new BSMessage('action', 'user', this.user.id, 'server', this.user.toString()).toString());
+    this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
     this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
 }
 
@@ -55,9 +55,10 @@ BSClient.prototype.onEvent = function(msg) {
 };
 BSClient.prototype.onData = function(msg) {
     switch(msg.name) {
-        case 'BSServer':
+        case 'bingo':
             this.fromString(msg.data);
             this.render();
+            console.log(this);
             break;
 
         default:
@@ -68,20 +69,36 @@ BSClient.prototype.onData = function(msg) {
 };
 
 BSClient.prototype.fromString = function(data) {
+    this.games = {};
+
     if(data !== undefined) {
-        this.games = [];
         for(var i = 0; i < data.games.length; i++){
-            this.games.push(BSGame.fromString(data.games[i]));
+            this.games[data.games[i].id] = data.games[i];
         }
 
-        this.last_words = [];
-        for(var i = 0; i < data.last_words.length; i++){
-            this.last_words.push(BSGame.fromString(data.last_words[i]));
+        if(this.game !== null) {
+            this.game = this.games[this.game.id];
+        }
+
+        this.last_words = data.last_words;
+    }
+};
+BSClient.prototype.toString = function() {
+    var games = [];
+    for (var key in this.games) {
+        if( this.games.hasOwnProperty(key) ) {
+            games.push(this.games[key]);
         }
     }
+
+    return {
+        games: games,
+        last_words: this.last_words
+    };
 };
 
 BSClient.prototype.render = function() {
+    var that = this;
     var content = document.getElementById('content');
     var navbar = document.getElementById('navbar');
 
@@ -91,20 +108,42 @@ BSClient.prototype.render = function() {
         content.innerHTML = templates['create-game'].render({username: this.user.name});
         content.innerHTML += templates['game-list'].render({games: this.toString().games});
 
-        var that = this;
         var create_game = document.getElementById('create-game');
-        create_game.addEventListener('click', function(){
-            that.createGame();
+        create_game.addEventListener('click', function(event){
+            that.createGame(event);
         });
+        var button_join = document.getElementsByClassName('button-join');
+        for(var i = 0; i < button_join.length; i++) {
+            button_join[i].addEventListener('click', function(event){
+                that.joinGame(event);
+            });
+        }
     }
     else {
-        switch(this.game.state) {
+        switch(this.game.stage) {
             case 'words':
                 content.innerHTML = templates['word-list'].render({words: this.game.words, last_words: this.last_words});
+                var button_addWord = document.getElementById('button-addWord');
+                button_addWord.addEventListener('click', function(event){
+                    that.addWord(document.getElementById('word').value);
+                });
+                var button_addLastWord = document.getElementsByClassName('button-addLastWord');
+                for(var i = 0; i < button_addLastWord.length; i++) {
+                    button_addLastWord[i].addEventListener('click', function(event){
+                        that.addWord(this.dataset.word);
+                    });
+                }
+                var button_removeWord = document.getElementsByClassName('button-removeWord');
+                for(var i = 0; i < button_removeWord.length; i++) {
+                    button_removeWord[i].addEventListener('click', function(event){
+                        that.removeWord(this.dataset.word);
+                        console.log(event);
+                    });
+                }
                 break;
 
             default:
-                console.warn('Uknown state: ' + this.game.state);
+                console.warn('Uknown stage: ' + this.game.stage);
                 break;
         }
     }
@@ -122,11 +161,28 @@ BSClient.prototype.createGame = function() {
         name: game,
         width: width,
         height: height,
-        state: 'words',
-        user: this.user.toString()
+        stage: 'words',
+        words: [],
+        players: [this.user.toObject()],
+        user: this.user.toObject()
     };
 
     this.ws.send(new BSMessage('event', 'newGame', this.user.id, 'server', this.game));
+    this.render();
+};
+BSClient.prototype.joinGame = function(event) {
+    this.game = this.games[event.target.dataset.id];
+    this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: this.game.id}));
+    this.render();
+};
+BSClient.prototype.addWord = function(word) {
+    if(word !== '') {
+        this.ws.send(new BSMessage('event', 'addWord', this.user.id, 'server', {game_id: this.game.id, word: word}));
+        this.render();
+    }
+};
+BSClient.prototype.removeWord = function(word) {
+    this.ws.send(new BSMessage('event', 'removeWord', this.user.id, 'server', {game_id: this.game.id, word: word}));
     this.render();
 };
 
@@ -244,11 +300,14 @@ BSUser.prototype.save = function () {
     }
 };
 
-BSUser.prototype.toString = function() {
-    return JSON.stringify({
+BSUser.prototype.toObject = function() {
+    return {
         id: this.id,
         name: this.name
-    });
+    };
+};
+BSUser.prototype.toString = function() {
+    return JSON.stringify(this.toObject());
 };
 /*
 BSUser.fromString = function(user) {
@@ -286,8 +345,10 @@ var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 
 var ws = null, bingo = null;
+var content = document.getElementById('content');
 
 function connect() {
+    content.innerHTML = templates['connecting'].render({});
     ws = new WebSocket(config.websocket.url, config.websocket.protocols);
     ws.onopen = onOpen;
     ws.onmessage = onMessage;
@@ -303,6 +364,7 @@ function onMessage (event) {
     console.log(event);
 }
 function onClose(event) {
+    content.innerHTML = templates['connecting'].render({error: event});
     window.setTimeout(connect, 500);
     console.log(event);
 }

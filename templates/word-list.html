@@ -7,11 +7,11 @@
         {{#words}}
         <tr>
             <td>
-                {{name}}
-                <span class="badge">{{user}}</span>
+                {{word}}
+                <span class="badge">{{user.name}}</span>
             </td>
             <td>
-                <a class="button-delete" href="#" data-word="{{word}}">
+                <a class="button-removeWord" href="#" data-word="{{word}}">
                     <i class="fa fa-trash-o"></i>
                 </a>
             </td>
@@ -23,10 +23,10 @@
         <form class="form-horizontal">
             <div class="row">
                 <div class="col-xs-11">
-                    <input type="text" class="form-control" id="word" placeholder="new word">
+                    <input type="text" class="form-control" id="word" placeholder="new word" required="required">
                 </div>
                 <div class="col-xs-1">
-                    <button type="submit" class="btn btn-default">💩</button>
+                    <button id="button-addWord" type="submit" class="btn btn-default">💩</button>
                 </div>
             </div>
             <div class="form-group">
@@ -41,7 +41,7 @@
             {{#last_words}}
             <span style="margin-right: 35px;">
                 {{.}}
-                <a class="button-add" href="#" data-word="{{.}}">
+                <a class="button-addLastWord" href="#" data-word="{{.}}">
                     <i class="fa fa-plus-square"></i>
                 </a>
             </span>

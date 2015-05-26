@@ -1,0 +1,17 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Connecting to server</h3>
+    </div>
+    <div class="panel-body">
+        please wait...
+        <i class="fa fa-spinner fa-spin fa-lg"></i>
+    </div>
+    {{#error}}
+    <div class="panel-footer">
+        <div class="alert alert-danger" role="alert">
+            Code: <span class="label label-danger">{{code}}</span>
+            Reason: {{reason}}
+        </div>
+    </div>
+    {{/error}}
+</div>

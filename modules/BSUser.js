@@ -53,11 +53,14 @@ BSUser.prototype.save = function () {
     }
 };
 
-BSUser.prototype.toString = function() {
-    return JSON.stringify({
+BSUser.prototype.toObject = function() {
+    return {
         id: this.id,
         name: this.name
-    });
+    };
+};
+BSUser.prototype.toString = function() {
+    return JSON.stringify(this.toObject());
 };
 /*
 BSUser.fromString = function(user) {

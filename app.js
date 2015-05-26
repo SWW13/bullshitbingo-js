@@ -36,18 +36,20 @@ var server = ws.createServer(function (conn) {
         console.dir(msg);
         bingo.onMessage(msg);
 
-        // TODO: not working
         if(msg.type === 'data' && msg.name === 'user') {
             user = msg.data;
             console.dir(user);
-            bus.emit('connectionOpened', user);
+            bingo.addPlayer(user);
         }
     });
 
     conn.on('close', function (code, reason) {
         console.log('# Connection closed: ' + code + ' - ' + reason);
         bus.off(sendEvent);
-        bus.emit('connectionClosed', user);
+
+        if(user !== null) {
+            bingo.removePlayer(user);
+        }
     });
 
     sendEvent = bus.on('messageSend', function(msg){
