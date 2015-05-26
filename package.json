@@ -18,17 +18,17 @@
         "start": "node app",
         "compile": "npm run compile-templates && npm run compile-modules",
         "compile-templates": "rm -f templates/out/* && node bin/hulk templates/* --outputdir templates/out/ && bin/templates.sh templates/out public/assets/js/tempaltes.js",
-        "compile-modules": "node_modules/browserify/bin/cmd.js app-client.js > public/assets/js/app.js"
+        "compile-modules": "node_modules/browserify/bin/cmd.js app-client.js > public/assets/js/app.js",
+        "install-dev": "npm install browserify"
     },
     "dependencies": {
-        "browserify": "*",
-        "config": "*",
-        "finalhandler": "*",
-        "hogan.js": "3.0.2",
-        "minibus": "*",
-        "mkdirp": "*",
-        "nodejs-websocket": "*",
-        "nopt": "*",
-        "serve-static": "*"
+        "config": "1.13.*",
+        "finalhandler": "0.3.*",
+        "hogan.js": "3.0.*",
+        "minibus": "3.1.*",
+        "mkdirp": "0.5.*",
+        "nodejs-websocket": "1.2.*",
+        "nopt": "3.0.*",
+        "serve-static": "1.9.*"
     }
 }

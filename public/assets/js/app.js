@@ -184,6 +184,8 @@ BSClient.prototype.createGame = function() {
     var height = document.getElementById('height').value;
 
     this.user.setName(username);
+    this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
+
     this.game = {
         id: Utils.generateUUID(),
         name: game,
