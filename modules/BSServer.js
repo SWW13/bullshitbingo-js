@@ -118,6 +118,10 @@ BSServer.prototype.onEvent = function(msg) {
             this.updateGame(msg.data.game_id);
             break;
 
+        case 'chat':
+            this.chat(msg.sender, msg.data);
+            break;
+
         default:
             console.warn('BSServer.onEvent(msg): unknown name: ' + msg.name);
             return false;
@@ -186,7 +190,7 @@ BSServer.prototype.joinGame = function(user_id, game_id) {
     }
     this.updateGame(game_id);
 
-    this.bus.emit('messageSend', new BSMessage('data', 'bingo', 'server', null, this.getBingo()));
+    this.updateBingo();
 };
 BSServer.prototype.leaveGame = function(user_id) {
     for (var game_id in this.games) {
@@ -212,8 +216,12 @@ BSServer.prototype.leaveGame = function(user_id) {
         }
     }
 
-    this.bus.emit('messageSend', new BSMessage('data', 'bingo', 'server', null, this.getBingo()));
+    this.updateBingo();
 };
+
+BSServer.prototype.updateBingo = function() {
+    this.bus.emit('messageSend', new BSMessage('data', 'bingo', 'server', null, this.getBingo()));
+}
 BSServer.prototype.updateGame = function(game_id) {
     var game = this.games[game_id];
     var words = [];
@@ -251,6 +259,7 @@ BSServer.prototype.log = function(message) {
 
 BSServer.prototype.addPlayer = function(user) {
     this.players[user.id] = user;
+    this.updateBingo();
 };
 
 module.exports = BSServer;

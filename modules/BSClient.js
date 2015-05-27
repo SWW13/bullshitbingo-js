@@ -17,6 +17,9 @@ function BSClient(ws) {
     document.getElementById('menu-logo').addEventListener('click', function(event){
         that.leaveGame(event);
     });
+    document.getElementById('button-sendMessage').addEventListener('click', function(event){
+        that.sendMessage(event);
+    });
 }
 
 BSClient.prototype.onMessage = function(msg_data) {
@@ -180,15 +183,25 @@ BSClient.prototype.render = function() {
     }
 };
 
+BSClient.prototype.sendMessage = function(event) {
+    this.setUsername();
+    var message = document.getElementById('message');
+    this.ws.send(new BSMessage('event', 'chat', this.user.id, 'server', message.value));
+    message.value = '';
+};
 BSClient.prototype.addChatRow = function(message, user_id) {
     var chat_table = document.getElementById('chat-table');
     var row = chat_table.insertRow(-1);
-    var cell_user = row.insertCell(0);
-    var cell_message = row.insertCell(1);
+    var cell_time = row.insertCell(0);
+    var cell_user = row.insertCell(1);
+    var cell_message = row.insertCell(2);
+    var d = new Date();
+
+    cell_time.innerHTML = '<i>' + d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '</i>';
 
     if(user_id !== undefined) {
-        cell_user.innerText = this.players[user_id].name;
-        cell_message.innerText = message;
+        cell_user.innerHTML = '<b>' + this.players[user_id].name + ':</b> ';
+        cell_message.innerHTML = message;
     } else {
         cell_message.innerHTML = '<i>' + message + '</i>';
     }
@@ -196,6 +209,17 @@ BSClient.prototype.addChatRow = function(message, user_id) {
     var chat = document.getElementById('chat');
     chat.scrollTop = chat.scrollHeight;
 };
+
+BSClient.prototype.setUsername = function() {
+    while(typeof(this.user.name) !== "string" || this.user.name.length < 1) {
+        var name = prompt('Please enter your username:');
+
+        if(typeof(name) === "string") {
+            this.user.setName(name);
+            this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
+        }
+    }
+}
 
 BSClient.prototype.createGame = function() {
     var username = document.getElementById('username').value;
@@ -216,15 +240,7 @@ BSClient.prototype.createGame = function() {
     this.render();
 };
 BSClient.prototype.joinGame = function(event) {
-    while(typeof(this.user.name) !== "string" || this.user.name.length < 1) {
-        var name = prompt('Please enter your username:');
-
-        if(typeof(name) === "string") {
-            this.user.setName(name);
-            this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
-        }
-    }
-
+    this.setUsername();
     var game_id = event.target.dataset.id;
     this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: game_id}));
 };
