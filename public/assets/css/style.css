@@ -17,3 +17,8 @@ body {
     float: left;
     margin-right: 25px;
 }
+
+#chat {
+    height: 500px;
+    overflow: auto;
+}

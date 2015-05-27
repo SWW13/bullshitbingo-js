@@ -5,6 +5,7 @@ var Utils = require('./Utils.js');
 function BSClient(ws) {
     this.ws = ws;
     this.games = [];
+    this.players = {};
     this.last_words = [];
     this.user = new BSUser();
     this.game = null;
@@ -14,8 +15,7 @@ function BSClient(ws) {
 
     var that = this;
     document.getElementById('menu-logo').addEventListener('click', function(event){
-        that.game = null;
-        that.render();
+        that.leaveGame(event);
     });
 }
 
@@ -48,12 +48,16 @@ BSClient.prototype.onAction = function(msg) {
 };
 BSClient.prototype.onEvent = function(msg) {
     switch(msg.name) {
-        case 'newGame':
-            this.games[msg.data.id] = msg.data;
+        case 'chat':
+            this.addChatRow(msg.data.message, msg.data.user);
+            break;
+
+        case 'log':
+            this.addChatRow(msg.data.message);
             break;
 
         default:
-            console.warn('BSClient.onEvent(msg): unknown name: ' + msg.name);
+            console.warn('BSServer.onEvent(msg): unknown name: ' + msg.name);
             return false;
             break;
     }
@@ -66,6 +70,12 @@ BSClient.prototype.onData = function(msg) {
             console.log(this);
             break;
 
+        case 'game':
+            this.game = msg.data;
+            this.render();
+            console.log(this);
+            break;
+
         default:
             console.warn('BSClient.onData(msg): unknown name: ' + msg.name);
             return false;
@@ -74,17 +84,11 @@ BSClient.prototype.onData = function(msg) {
 };
 
 BSClient.prototype.fromString = function(data) {
-    this.games = {};
+    this.games = [];
 
     if(data !== undefined) {
-        for(var i = 0; i < data.games.length; i++){
-            this.games[data.games[i].id] = data.games[i];
-        }
-
-        if(this.game !== null) {
-            this.game = this.games[this.game.id];
-        }
-
+        this.games = data.games;
+        this.players = data.players;
         this.last_words = data.last_words;
     }
 };
@@ -111,7 +115,7 @@ BSClient.prototype.render = function() {
 
     if(this.game === null) {
         content.innerHTML = templates['create-game'].render({username: this.user.name});
-        content.innerHTML += templates['game-list'].render({games: this.toString().games});
+        content.innerHTML += templates['game-list'].render({games: this.games});
 
         var create_game = document.getElementById('create-game');
         create_game.addEventListener('click', function(event){
@@ -176,28 +180,39 @@ BSClient.prototype.render = function() {
     }
 };
 
+BSClient.prototype.addChatRow = function(message, user_id) {
+    var chat_table = document.getElementById('chat-table');
+    var row = chat_table.insertRow(-1);
+    var cell_user = row.insertCell(0);
+    var cell_message = row.insertCell(1);
+
+    if(user_id !== undefined) {
+        cell_user.innerText = this.players[user_id].name;
+        cell_message.innerText = message;
+    } else {
+        cell_message.innerHTML = '<i>' + message + '</i>';
+    }
+
+    var chat = document.getElementById('chat');
+    chat.scrollTop = chat.scrollHeight;
+};
+
 BSClient.prototype.createGame = function() {
     var username = document.getElementById('username').value;
-    var game = document.getElementById('game').value;
+    var name = document.getElementById('game').value;
     var width = document.getElementById('width').value;
     var height = document.getElementById('height').value;
 
     this.user.setName(username);
     this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
 
-    this.game = {
-        id: Utils.generateUUID(),
-        name: game,
+    var game = {
+        name: name,
         width: width,
-        height: height,
-        stage: 'words',
-        words: [],
-        boards: {},
-        players: [this.user.toObject()],
-        user: this.user.toObject()
+        height: height
     };
 
-    this.ws.send(new BSMessage('event', 'newGame', this.user.id, 'server', this.game));
+    this.ws.send(new BSMessage('event', 'newGame', this.user.id, 'server', game));
     this.render();
 };
 BSClient.prototype.joinGame = function(event) {
@@ -210,8 +225,12 @@ BSClient.prototype.joinGame = function(event) {
         }
     }
 
-    this.game = this.games[event.target.dataset.id];
-    this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: this.game.id}));
+    var game_id = event.target.dataset.id;
+    this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: game_id}));
+};
+BSClient.prototype.leaveGame = function(event) {
+    this.game = null;
+    this.ws.send(new BSMessage('event', 'leaveGame', this.user.id, 'server'));
     this.render();
 };
 BSClient.prototype.addWord = function(word) {
@@ -239,9 +258,9 @@ BSClient.prototype.getBoardOverview = function() {
 
     for(var i = 0; i < players.length; i++) {
         boards.push({
-            id: players[i].id,
-            name: players[i].name,
-            lines: this.getLines(this.game.boards[players[i].id])
+            id: players[i],
+            name: this.players[players[i]].name,
+            lines: this.getLines(this.game.boards[players[i]])
         });
     }
 
@@ -250,18 +269,21 @@ BSClient.prototype.getBoardOverview = function() {
 BSClient.prototype.getLines = function(board) {
     var lines = [];
     var line = [];
-    for(var i = 0; i < board.length; i++) {
-        if(i % this.game.width === 0 && i > 0) {
-            lines.push(line);
-            line = [];
-        }
 
-        line.push({
-            word: board[i].word,
-            css_class: (board[i].active ? 'primary' : 'default')
-        });
+    if(board !== undefined) {
+        for(var i = 0; i < board.length; i++) {
+            if(i % this.game.width === 0 && i > 0) {
+                lines.push(line);
+                line = [];
+            }
+
+            line.push({
+                word: board[i].word,
+                css_class: (board[i].active ? 'primary' : 'default')
+            });
+        }
+        lines.push(line);
     }
-    lines.push(line);
 
     return lines;
 };

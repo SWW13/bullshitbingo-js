@@ -45,16 +45,20 @@ var server = ws.createServer(function (conn) {
 
     conn.on('close', function (code, reason) {
         console.log('# Connection closed: ' + code + ' - ' + reason);
-        bus.off(sendEvent);
-
         if(user !== null) {
-            bingo.removePlayer(user);
+            bingo.leaveGame(user.id);
         }
+        bus.off(sendEvent);
     });
 
     sendEvent = bus.on('messageSend', function(msg){
         if(msg.receiver === null || user === null || msg.receiver === user.id) {
-            conn.sendText(msg.toString());
+            try {
+                conn.sendText(msg.toString());
+            } catch(ex) {
+                console.log('could not send message.');
+                console.dir(ex);
+            }
             console.dir(msg);
         }
     });
