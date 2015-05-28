@@ -13,15 +13,6 @@ function BSClient(ws) {
 
     this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
     this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
-
-    var that = this;
-    document.getElementById('menu-logo').addEventListener('click', function (event) {
-        that.leaveGame(event);
-    });
-    document.getElementById('chat-form').addEventListener('submit', function (event) {
-        event.preventDefault();
-        that.sendMessage(event);
-    });
 }
 
 BSClient.prototype.onMessage = function (msg_data) {
@@ -505,7 +496,17 @@ var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 
 var ws = null, bingo = null;
-var content = document.getElementById('content');
+var leaveGame = document.getElementById('menu-logo').addEventListener('click', function (event) {
+    if (bingo !== null) {
+        bingo.leaveGame(event);
+    }
+});
+var sendMessage = document.getElementById('chat-form').addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (bingo !== null) {
+        bingo.sendMessage(event);
+    }
+});
 
 function connect() {
     content.innerHTML = templates['connecting'].render({});
@@ -515,15 +516,16 @@ function connect() {
     ws.onclose = onClose;
 }
 
-function onOpen (event) {
+function onOpen(event) {
     bingo = new BSClient(ws);
     console.log(event);
 };
-function onMessage (event) {
+function onMessage(event) {
     bingo.onMessage(event.data);
     console.log(event);
 }
 function onClose(event) {
+    bingo = null;
     content.innerHTML = templates['connecting'].render({error: event});
     window.setTimeout(connect, 500);
     console.log(event);

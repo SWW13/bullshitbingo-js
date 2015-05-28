@@ -12,15 +12,6 @@ function BSClient(ws) {
 
     this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
     this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
-
-    var that = this;
-    document.getElementById('menu-logo').addEventListener('click', function (event) {
-        that.leaveGame(event);
-    });
-    document.getElementById('chat-form').addEventListener('submit', function (event) {
-        event.preventDefault();
-        that.sendMessage(event);
-    });
 }
 
 BSClient.prototype.onMessage = function (msg_data) {
