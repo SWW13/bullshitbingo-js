@@ -35,7 +35,7 @@ d.run(function () {
     var bingo = new BSServer(bus);
 
     // cleanup every 15 minutes
-    setInterval(function() {
+    setInterval(function () {
         bingo.cleanup();
     }, 15 * 60 * 1000);
 
@@ -55,21 +55,21 @@ d.run(function () {
                 var user_old = user;
                 var user_new = msg.data;
 
-                if( (user === null || user.id === user_new.id) &&
+                if ((user === null || user.id === user_new.id) &&
                     typeof(user_new.id) === "string" &&
                     (msg.name === null || typeof(msg.name) === "string")
-                ) {
+                    ) {
                     user = user_new;
                     console.dir(user);
                     bingo.addPlayer(user);
 
-                    if(user_old === null) {
+                    if (user_old === null) {
                         bingo.connected(user.id);
-                    } else if(user_old.name !== user_new.name) {
+                    } else if (user_old.name !== user_new.name) {
                         bingo.nickChanged(user.id, user_old.name, user_new.name);
                     }
                 } else {
-                    if(user !== null) {
+                    if (user !== null) {
                         bingo.err(user.id, '<b>nice try.</b>');
                     }
                 }

@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "config": "1.13.*",
+        "escape-html": "1.0.*",
         "finalhandler": "0.3.*",
         "hogan.js": "3.0.*",
         "minibus": "3.1.*",

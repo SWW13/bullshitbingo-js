@@ -1,6 +1,6 @@
 var BSMessage = require('./BSMessage');
 var BSUser = require('./BSUser');
-var Utils = require('./Utils.js');
+var escape = require('escape-html');
 
 function BSClient(ws) {
     this.ws = ws;
@@ -41,7 +41,7 @@ BSClient.prototype.onEvent = function (msg) {
     switch (msg.name) {
         case 'chat':
         case 'log':
-            this.onChatMessage(msg);
+            this.onChatMessage((msg.name === 'chat' ? msg.sender : null), msg.data);
             break;
 
         default:
@@ -148,7 +148,7 @@ BSClient.prototype.render = function () {
                 var button_removeWord = document.getElementsByClassName('button-removeWord');
                 for (var i = 0; i < button_removeWord.length; i++) {
                     button_removeWord[i].addEventListener('click', function (event) {
-                        that.removeWord(this.dataset.word);
+                        that.removeWord(this.dataset.id);
                         console.log(event);
                     });
                 }
@@ -162,7 +162,7 @@ BSClient.prototype.render = function () {
                 for (var i = 0; i < button_buzzWord.length; i++) {
                     button_buzzWord[i].addEventListener('click', function (event) {
                         event.preventDefault();
-                        that.buzzWord(this.dataset.word);
+                        that.buzzWord(this.dataset.id);
                     });
                 }
                 break;
@@ -187,10 +187,14 @@ BSClient.prototype.render = function () {
 BSClient.prototype.sendMessage = function (event) {
     this.setUsername();
     var message = document.getElementById('chat-message');
-    this.ws.send(new BSMessage('event', 'chat', this.user.id, 'server', message.value).toString());
-    message.value = '';
+    if (message.length < 1 || message.length > 1024) {
+        this.onChatMessage(null, '<b>Error:</b> messages must be 1 to 1024 characters long.');
+    } else {
+        this.ws.send(new BSMessage('event', 'chat', this.user.id, 'server', message.value).toString());
+        message.value = '';
+    }
 };
-BSClient.prototype.onChatMessage = function (msg) {
+BSClient.prototype.onChatMessage = function (user_id, message) {
     var chat_table = document.getElementById('chat-table');
     var row = chat_table.insertRow(-1);
     var cell_time = row.insertCell(0);
@@ -200,11 +204,11 @@ BSClient.prototype.onChatMessage = function (msg) {
 
     cell_time.innerHTML = '<i>' + ('00' + d.getHours()).slice(-2) + ':' + ('00' + d.getMinutes()).slice(-2) + ':' + ('00' + d.getSeconds()).slice(-2) + '</i>';
 
-    if (msg.name === 'chat') {
-        cell_user.innerHTML = '<b>&lt;' + this.getUsername(msg.sender) + '&gt;</b>';
-        cell_message.innerHTML = msg.data;
+    if (user_id !== null) {
+        cell_user.innerHTML = '<b>&lt;' + this.getUsername(user_id) + '&gt;</b>';
+        cell_message.innerHTML = message;
     } else {
-        cell_message.innerHTML = '<i>' + msg.data + '</i>';
+        cell_message.innerHTML = '<i>' + message + '</i>';
     }
 
     var chat = document.getElementById('chat');
@@ -226,8 +230,8 @@ BSClient.prototype.setUsername = function (username) {
     }
 };
 BSClient.prototype.getUsername = function (user_id) {
-    if(this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
-        return this.players[user_id].name;
+    if (this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
+        return escape(this.players[user_id].name);
     } else {
         return 'unknown player (' + user_id + ')';
     }
@@ -264,18 +268,14 @@ BSClient.prototype.addWord = function (word) {
         this.render();
     }
 };
-BSClient.prototype.removeWord = function (word) {
-    this.ws.send(new BSMessage('event', 'removeWord', this.user.id, 'server', {game_id: this.game.id, word: word}).toString());
-    this.render();
+BSClient.prototype.removeWord = function (word_id) {
+    this.ws.send(new BSMessage('event', 'removeWord', this.user.id, 'server', {game_id: this.game.id, word_id: word_id}).toString());
 };
-BSClient.prototype.buzzWord = function (word) {
-    if (word !== '') {
-        this.ws.send(new BSMessage('event', 'buzzWord', this.user.id, 'server', {game_id: this.game.id, word: word}).toString());
-        this.render();
-    }
+BSClient.prototype.buzzWord = function (word_id) {
+    this.ws.send(new BSMessage('event', 'buzzWord', this.user.id, 'server', {game_id: this.game.id, word_id: word_id}).toString());
 };
 BSClient.prototype.getBoard = function (user_id) {
-    if(user_id === undefined) {
+    if (user_id === undefined) {
         user_id = this.user.id;
     }
 
@@ -307,6 +307,7 @@ BSClient.prototype.getLines = function (board) {
             }
 
             line.push({
+                id: board[i].id,
                 word: board[i].word,
                 css_class: (board[i].active ? 'primary' : 'default')
             });

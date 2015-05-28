@@ -1,5 +1,6 @@
 var BSMessage = require('./BSMessage');
 var Utils = require('./Utils.js');
+var escape = require('escape-html');
 
 function BSServer(bus) {
     this.bus = bus;
@@ -51,19 +52,19 @@ BSServer.prototype.onEvent = function (msg) {
             break;
 
         case 'addWord':
-            this.addWord(msg.sender, msg.data.game_id, Utils.removeHTML(msg.data.word));
+            this.addWord(msg.sender, msg.data.game_id, escape(msg.data.word));
             break;
 
         case 'buzzWord':
-            this.buzzWord(msg.sender, msg.data.game_id, msg.data.word);
+            this.buzzWord(msg.sender, msg.data.game_id, parseInt(msg.data.word_id));
             break;
 
         case 'removeWord':
-            this.removeWord(msg.sender, msg.data.game_id, msg.data.word);
+            this.removeWord(msg.sender, msg.data.game_id, parseInt(msg.data.word_id));
             break;
 
         case 'chat':
-            this.chat(msg.sender, Utils.removeHTML(msg.data));
+            this.chat(msg.sender, escape(msg.data));
             break;
 
         default:
@@ -84,7 +85,7 @@ BSServer.prototype.cleanup = function () {
             var game = this.games[key];
 
             // game not won and at least 2 players and not older than 1 day
-            if((game.players.length > 2 || game.start + 86400000 > Date.now()) && game.stage !== 'won') {
+            if ((game.players.length > 2 || game.start + 86400000 > Date.now()) && game.stage !== 'won') {
                 games_new[key] = game;
             } else {
                 changed = true;
@@ -98,7 +99,7 @@ BSServer.prototype.cleanup = function () {
         }
     }
 
-    if(changed) {
+    if (changed) {
         this.games = games_new;
         this.updateBingo();
     }
@@ -127,6 +128,7 @@ BSServer.prototype.getBingo = function () {
     function compare_start(a, b) {
         return a.start - b.start;
     }
+
     games.sort(compare_start);
 
     return {
@@ -140,11 +142,11 @@ BSServer.prototype.createGame = function (user_id, game) {
     var size = parseInt(game.size);
 
     // validate
-    if(typeof(game.name) !== "string" || size === NaN){
+    if (typeof(game.name) !== "string" || size === NaN) {
         this.err(user_id, '<b>nice try.</b>');
         return;
     }
-    if(game.name.length < 1 || size < 3 || size > 10){
+    if (game.name.length < 1 || size < 3 || size > 10) {
         this.err(user_id, '<b>Error:</b> Please enter a game name and select a valid game size.');
         return;
     }
@@ -153,7 +155,7 @@ BSServer.prototype.createGame = function (user_id, game) {
     this.games[id] = {
         id: id,
         start: Date.now(),
-        name: game.name,
+        name: escape(game.name),
         size: size,
         stage: 'words',
         words: [],
@@ -168,7 +170,7 @@ BSServer.prototype.createGame = function (user_id, game) {
     this.log(user_id, this.players[user_id].name + ' created game "' + this.games[id].name + '"');
 };
 BSServer.prototype.joinGame = function (user_id, game_id) {
-    if(!this.games.hasOwnProperty(game_id)) {
+    if (!this.games.hasOwnProperty(game_id)) {
         this.err(user_id, '<b>Error:</b> Game not found.');
         return;
     }
@@ -217,13 +219,14 @@ BSServer.prototype.leaveGame = function (user_id) {
 };
 
 BSServer.prototype.addWord = function (user_id, game_id, word) {
-    if(!this.games.hasOwnProperty(game_id)) {
+    if (!this.games.hasOwnProperty(game_id)) {
         this.err(user_id, '<b>Error:</b> Game not found.');
         return;
     }
 
     // only in words stage
-    if(this.games[game_id].stage !== 'words') {
+    if (this.games[game_id].stage !== 'words') {
+        this.err(user_id, 'nice try.');
         return;
     }
 
@@ -237,7 +240,7 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
         }
     }
     if (!found) {
-        this.games[game_id].words.push({word: word, user: this.players[user_id]});
+        this.games[game_id].words.push({id: -1, word: word, user: this.players[user_id]});
     }
 
     // switch stage if word limit reached
@@ -262,56 +265,68 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
 
     this.updateGame(game_id);
 };
-BSServer.prototype.removeWord = function (user_id, game_id, word) {
-    if(!this.games.hasOwnProperty(game_id)) {
+BSServer.prototype.removeWord = function (user_id, game_id, word_id) {
+    if (!this.games.hasOwnProperty(game_id)) {
         this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+    if (!this.games[game_id].words.hasOwnProperty(word_id)) {
+        this.err(user_id, '<b>Error:</b> Word not found.');
         return;
     }
 
     // only in words stage
-    if(this.games[game_id].stage !== 'words') {
+    if (this.games[game_id].stage !== 'words') {
+        this.err(user_id, 'nice try.');
         return;
     }
 
-    var changed = false;
+    var word = null;
     var words = this.games[game_id].words;
-    var words_new = [];
+    this.games[game_id].words = [];
     for (var i = 0; i < words.length; i++) {
-        if (words[i].word !== word) {
-            words_new.push(words[i]);
+        if (i !== word_id) {
+            this.games[game_id].words.push(words[i]);
         } else {
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        this.games[game_id].words = words_new;
-        this.updateGame(game_id);
-
-        this.log(user_id, this.players[user_id].name + ' removed word "' + word + '" in game "' + this.games[game_id].name + '"');
-    }
-};
-BSServer.prototype.buzzWord = function (user_id, game_id, word) {
-    if(!this.games.hasOwnProperty(game_id)) {
-        this.err(user_id, '<b>Error:</b> Game not found.');
-        return;
-    }
-
-    // only in bingo stage
-    if(this.games[game_id].stage !== 'bingo') {
-        return;
-    }
-
-    // swap word active
-    var words = this.games[game_id].boards[user_id];
-
-    for (var i = 0; i < words.length; i++) {
-        if (words[i].word === word) {
-            this.games[game_id].boards[user_id][i].active = !words[i].active;
+            this.log(user_id, this.players[user_id].name + ' removed word "' + words[i].word + '" in game "' + this.games[game_id].name + '"');
         }
     }
 
     this.updateGame(game_id);
+};
+BSServer.prototype.buzzWord = function (user_id, game_id, word_id) {
+    if (!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+    if (!this.games[game_id].boards.hasOwnProperty(user_id)) {
+        this.err(user_id, '<b>Error:</b> User board not found.');
+        return;
+    }
+
+    // only in bingo stage
+    if (this.games[game_id].stage !== 'bingo') {
+        this.err(user_id, 'nice try.');
+        return;
+    }
+
+    // swap word active
+    var found = false;
+    var words = this.games[game_id].boards[user_id];
+
+    for (var i = 0; i < words.length; i++) {
+        if (words[i].id === word_id) {
+            found = true;
+            this.games[game_id].boards[user_id][i].active = !words[i].active;
+            break;
+        }
+    }
+
+    if(found) {
+        this.updateGame(game_id);
+    } else {
+        this.err(user_id, '<b>Error:</b> Word not found.');
+    }
 };
 
 BSServer.prototype.updateBingo = function () {
@@ -321,13 +336,14 @@ BSServer.prototype.updateGame = function (game_id) {
     var game = this.games[game_id];
     var words = [];
 
-    if (game.stage === 'bingo') {
-        for (var i = 0; i < game.words.length; i++) {
-            words.push({
-                word: game.words[i].word,
-                active: false
-            });
-        }
+    for (var i = 0; i < game.words.length; i++) {
+        this.games[game_id].words[i].id = i;
+
+        words.push({
+            id: i,
+            word: game.words[i].word,
+            active: false
+        });
     }
 
     for (var i = 0; i < game.players.length; i++) {
@@ -344,11 +360,11 @@ BSServer.prototype.updateGame = function (game_id) {
                 var line, row;
 
                 // check for win - horizontal
-                for(line = 0; line < game.size && !win; line++) {
+                for (line = 0; line < game.size && !win; line++) {
                     win_tmp = true;
 
-                    for(row = 0; row < game.size && !win; row++) {
-                        if(board[line * game.size + row].active === false) {
+                    for (row = 0; row < game.size && !win; row++) {
+                        if (board[line * game.size + row].active === false) {
                             win_tmp = false;
                             break;
                         }
@@ -358,11 +374,11 @@ BSServer.prototype.updateGame = function (game_id) {
                 }
 
                 // check for win - vertical
-                for(row = 0; row < game.size && !win; row++) {
+                for (row = 0; row < game.size && !win; row++) {
                     win_tmp = true;
 
-                    for(line = 0; line < game.size && !win; line++) {
-                        if(board[line * game.size + row].active === false) {
+                    for (line = 0; line < game.size && !win; line++) {
+                        if (board[line * game.size + row].active === false) {
                             win_tmp = false;
                             break;
                         }
@@ -374,21 +390,21 @@ BSServer.prototype.updateGame = function (game_id) {
                 // check for win - diagonal
                 var win_tmp_left = true;
                 var win_tmp_right = true;
-                for(var i = 0; i < game.size && !win && (win_tmp_left || win_tmp_right); i++) {
+                for (var i = 0; i < game.size && !win && (win_tmp_left || win_tmp_right); i++) {
                     // left up to right down
-                    if(board[i * game.size + i].active === false) {
+                    if (board[i * game.size + i].active === false) {
                         win_tmp_left = false;
                     }
                     // right up to left down
-                    if(board[(i+1) * game.size - 1 - i].active === false) {
+                    if (board[(i + 1) * game.size - 1 - i].active === false) {
                         win_tmp_right = false;
                     }
                 }
-                if(win_tmp_left || win_tmp_right) {
+                if (win_tmp_left || win_tmp_right) {
                     win = true;
                 }
 
-                if(win) {
+                if (win) {
                     this.games[game_id].stage = 'won';
                     this.games[game_id].winner = player_id;
                     this.log(player_id, this.players[player_id].name + ' has won game "' + game.name + '"');
@@ -401,7 +417,7 @@ BSServer.prototype.updateGame = function (game_id) {
 };
 
 BSServer.prototype.chat = function (user_id, message) {
-    if(message.length > 0) {
+    if (message.length > 0) {
         this.bus.emit('messageSend', new BSMessage('event', 'chat', user_id, null, message));
     }
 };
@@ -413,8 +429,8 @@ BSServer.prototype.err = function (user_id, message) {
 };
 
 BSServer.prototype.getUsername = function (user_id) {
-    if(this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
-        return this.players[user_id].name;
+    if (this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
+        return escape(this.players[user_id].name);
     } else {
         return 'unknown player (' + user_id + ')';
     }
@@ -427,7 +443,7 @@ BSServer.prototype.disconnected = function (user_id) {
     this.log(user_id, this.getUsername(user_id) + ' disconnected.');
 };
 BSServer.prototype.nickChanged = function (user_id, old_name, new_name) {
-    if(old_name !== null) {
+    if (old_name !== null) {
         this.log(user_id, old_name + ' changed nick to ' + new_name);
     } else {
         this.log(user_id, 'unknown player (' + user_id + ') changed nick to ' + new_name);
