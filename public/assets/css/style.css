@@ -2,7 +2,10 @@ body {
     padding-top: 50px;
 }
 #content {
-    padding: 40px 15px;
+    padding: 40px 15px 5px 15px;
+}
+#chat-container {
+    padding: 5px 15px 40px 15px;
 }
 
 #wordlist tr td:last-child {
