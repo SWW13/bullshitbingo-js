@@ -1,22 +1,28 @@
 <div>
     <h2>Create new game</h2>
-    <form>
+    <form id="create-game" name="game">
         <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" class="form-control" id="username" placeholder="username" value="{{username}}">
+            <label for="game-username">Username</label>
+            <input id="game-username" type="text" class="form-control" placeholder="username" value="{{username}}">
         </div>
         <div class="form-group">
-            <label for="game">Game Name</label>
-            <input type="text" class="form-control" id="game" placeholder="my awesome 💩">
+            <label for="game-name">Game Name</label>
+            <input id="game-name" name="name" type="text" class="form-control" placeholder="my awesome 💩" required>
         </div>
         <div class="form-group">
-            <label class="sr-only">Board Size (width x height)</label>
-            <div class="input-group">
-                <input type="number" min="3" max="15" class="form-control" id="width" placeholder="width">
-                <div class="input-group-addon">╳</div>
-                <input type="number" min="3" max="20" class="form-control" id="height" placeholder="height">
-            </div>
+            <label for="game-size">Board Size (width ╳ height)</label>
+            <select id="game-size" class="form-control">
+                <option value="2">2 ╳ 2</option>
+                <option value="3">3 ╳ 3</option>
+                <option value="4">4 ╳ 4</option>
+                <option value="5" selected>5 ╳ 5</option>
+                <option value="6">6 ╳ 6</option>
+                <option value="7">7 ╳ 7</option>
+                <option value="8">8 ╳ 8</option>
+                <option value="9">9 ╳ 9</option>
+                <option value="10">10 ╳ 10</option>
+            </select>
         </div>
-        <button id="create-game" type="submit" class="btn btn-default">Create new 💩bingo!</button>
+        <button id="game-create" type="submit" class="btn btn-default">Create new 💩bingo!</button>
     </form>
 </div>

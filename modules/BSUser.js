@@ -8,37 +8,31 @@ function BSUser() {
 }
 
 BSUser.prototype.setName = function (name) {
-    if(name !== undefined) {
+    if (name !== undefined) {
         this.name = name;
         this.save();
     }
 };
-/*
-BSUser.prototype.getName = function () {
-    if(this.name !== undefined && this.name !== null) {
-        return this.name;
-    } else {
-        return 'Unknown User (' + this.id + ')';
-    }
+BSUser.prototype.hasName = function () {
+    return (typeof(this.name) === "string" && this.name.length >= 1);
 };
-*/
 
 BSUser.prototype.load = function () {
-    if(typeof(Storage) !== "undefined") {
+    if (typeof(Storage) !== "undefined") {
         var user = localStorage.user;
         this.id = null;
         this.name = null;
 
-        if(user !== undefined) {
+        if (user !== undefined) {
             user = JSON.parse(localStorage.user);
         }
 
-        if(user !== undefined && user !== null) {
-            if(user.id !== undefined && user.id !== null) {
+        if (user !== undefined && user !== null) {
+            if (user.id !== undefined && user.id !== null) {
                 this.id = user.id;
             }
 
-            if(user.name !== undefined) {
+            if (user.name !== undefined) {
                 this.name = user.name;
             }
         } else {
@@ -50,36 +44,36 @@ BSUser.prototype.load = function () {
     }
 };
 BSUser.prototype.save = function () {
-    if(typeof(Storage) !== "undefined") {
+    if (typeof(Storage) !== "undefined") {
         localStorage.user = this.toString();
     } else {
         console.warn('BSUser.save: LocalStorage not available.');
     }
 };
 
-BSUser.prototype.toObject = function() {
+BSUser.prototype.toObject = function () {
     return {
         id: this.id,
         name: this.name
     };
 };
-BSUser.prototype.toString = function() {
+BSUser.prototype.toString = function () {
     return JSON.stringify(this.toObject());
 };
 /*
-BSUser.fromString = function(user) {
-    if(user !== undefined && user !== null) {
-        if(typeof(user) === "string") {
-            user = JSON.parse(user);
-        }
-        var bs_user = new BSUser(false, true);
-        bs_user.id = user.id;
-        bs_user.name = user.name;
+ BSUser.fromString = function(user) {
+ if(user !== undefined && user !== null) {
+ if(typeof(user) === "string") {
+ user = JSON.parse(user);
+ }
+ var bs_user = new BSUser(false, true);
+ bs_user.id = user.id;
+ bs_user.name = user.name;
 
-        return bs_user;
-    }
-    return null;
-}
-*/
+ return bs_user;
+ }
+ return null;
+ }
+ */
 
 module.exports = BSUser;

@@ -9,7 +9,7 @@ module.exports = {
 
         return uuid;
     },
-    shuffle: function(array) {
+    shuffle: function (array) {
         var currentIndex = array.length, temporaryValue, randomIndex;
 
         // While there remain elements to shuffle...

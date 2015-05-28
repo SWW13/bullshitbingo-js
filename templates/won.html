@@ -1,0 +1,23 @@
+<div>
+    <h2>
+        <i class="fa fa-trophy"></i> {{name}} has won!
+    </h2>
+
+    <table id="board-won" class="table table-bordered">
+        <tbody>
+        {{#lines}}
+        <tr>
+            {{#.}}
+            <td class="bg-{{css_class}}">
+                {{word}}
+            </td>
+            {{/.}}
+        </tr>
+        {{/lines}}
+        </tbody>
+    </table>
+
+    <p>
+        <a id="go-back" href="#">Go back</a>
+    </p>
+</div>

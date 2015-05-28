@@ -5,33 +5,33 @@ function BSMessage(type, name, sender, receiver, data) {
     this.receiver = null;
     this.data = null;
 
-    if(type !== undefined) {
+    if (type !== undefined) {
         this.type = type;
     }
-    if(name !== undefined) {
+    if (name !== undefined) {
         this.name = name;
     }
-    if(sender !== undefined) {
+    if (sender !== undefined) {
         this.sender = sender;
     }
-    if(receiver !== undefined) {
+    if (receiver !== undefined) {
         this.receiver = receiver;
     }
-    if(data !== undefined) {
+    if (data !== undefined) {
         this.data = data;
     }
 }
 
-BSMessage.prototype.isEmpty = function() {
+BSMessage.prototype.isEmpty = function () {
     return (this.data !== null && this.data !== undefined);
 };
 
-BSMessage.prototype.is = function(type, name) {
+BSMessage.prototype.is = function (type, name) {
     return this.action === type &&
         ((name !== undefined) ? this.name === name : true);
 };
 
-BSMessage.prototype.toString = function() {
+BSMessage.prototype.toString = function () {
     return JSON.stringify({
         type: this.type,
         name: this.name,
@@ -40,9 +40,9 @@ BSMessage.prototype.toString = function() {
         data: this.data
     });
 };
-BSMessage.fromString = function(msg) {
-    if(msg !== undefined && msg !== null) {
-        if(typeof(msg) === "string") {
+BSMessage.fromString = function (msg) {
+    if (msg !== undefined && msg !== null) {
+        if (typeof(msg) === "string") {
             msg = JSON.parse(msg);
         }
         return new BSMessage(msg.type, msg.name, msg.sender, msg.receiver, msg.data);

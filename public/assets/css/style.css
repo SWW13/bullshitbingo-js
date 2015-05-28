@@ -13,14 +13,27 @@ body {
     width: 100%;
 }
 
+#board-won tr td {
+    text-align: center;
+}
+
 .board-other-container {
     float: left;
     margin-right: 25px;
 }
 
+.board-other tr td {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
 #chat {
     max-height: 500px;
     overflow: auto;
+}
+
+#chat-table tr td {
+    padding: 0;
 }
 
 #chat-table tr td:nth-child(1) {
@@ -30,7 +43,12 @@ body {
 #chat-table tr td:nth-child(2) {
     text-align: right;
     width: 15%;
+    padding-right: 10px;
 }
 #chat-table tr td:nth-child(3) {
     text-align: left;
+}
+
+.borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th {
+    border: none;
 }
