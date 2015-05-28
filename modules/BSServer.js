@@ -144,7 +144,7 @@ BSServer.prototype.createGame = function (user_id, game) {
         this.err(user_id, '<b>nice try.</b>');
         return;
     }
-    if(game.name.length < 1 || size < 3 || size < 10){
+    if(game.name.length < 1 || size < 3 || size > 10){
         this.err(user_id, '<b>Error:</b> Please enter a game name and select a valid game size.');
         return;
     }
