@@ -211,7 +211,7 @@ BSClient.prototype.onChatMessage = function (msg) {
     cell_time.innerHTML = '<i>' + ('00' + d.getHours()).slice(-2) + ':' + ('00' + d.getMinutes()).slice(-2) + ':' + ('00' + d.getSeconds()).slice(-2) + '</i>';
 
     if (msg.name === 'chat') {
-        cell_user.innerHTML = '<b>&lt;' + this.players[msg.sender].name + '&gt;</b>';
+        cell_user.innerHTML = '<b>&lt;' + this.getUsername(msg.sender) + '&gt;</b>';
         cell_message.innerHTML = msg.data;
     } else {
         cell_message.innerHTML = '<i>' + msg.data + '</i>';
@@ -234,7 +234,14 @@ BSClient.prototype.setUsername = function (username) {
     } else {
         this.setUsername();
     }
-}
+};
+BSClient.prototype.getUsername = function (user_id) {
+    if(this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
+        return this.players[user_id].name;
+    } else {
+        return 'unknown player (' + user_id + ')';
+    }
+};
 
 BSClient.prototype.createGame = function () {
     var username = document.getElementById('game-username').value;
@@ -487,6 +494,9 @@ module.exports = {
         }
 
         return array;
+    },
+    removeHTML: function(string){
+        return string.replace(/<[^>]+>/ig, '');
     }
 };
 },{}],5:[function(require,module,exports){

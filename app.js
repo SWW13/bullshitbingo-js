@@ -52,16 +52,34 @@ d.run(function () {
             bingo.onMessage(msg);
 
             if (msg.type === 'data' && msg.name === 'user') {
-                user = msg.data;
-                console.dir(user);
-                bingo.addPlayer(user);
+                var user_old = user;
+                var user_new = msg.data;
+
+                if( (user === null || user.id === user_new.id) &&
+                    typeof(user_new.id) === "string" &&
+                    (msg.name === null || typeof(msg.name) === "string")
+                ) {
+                    user = user_new;
+                    console.dir(user);
+                    bingo.addPlayer(user);
+
+                    if(user_old === null) {
+                        bingo.connected(user.id);
+                    } else if(user_old.name !== user_new.name) {
+                        bingo.nickChanged(user.id, user_old.name, user_new.name);
+                    }
+                } else {
+                    if(user !== null) {
+                        bingo.err(user.id, '<b>nice try.</b>');
+                    }
+                }
             }
         });
 
         conn.on('close', function (code, reason) {
             console.log('# Connection closed: ' + code + ' - ' + reason);
             if (user !== null) {
-                bingo.leaveGame(user.id);
+                bingo.disconnected(user.id);
             }
             bus.off(sendEvent);
         });

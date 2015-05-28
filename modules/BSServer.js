@@ -51,7 +51,7 @@ BSServer.prototype.onEvent = function (msg) {
             break;
 
         case 'addWord':
-            this.addWord(msg.sender, msg.data.game_id, msg.data.word);
+            this.addWord(msg.sender, msg.data.game_id, Utils.removeHTML(msg.data.word));
             break;
 
         case 'buzzWord':
@@ -63,7 +63,7 @@ BSServer.prototype.onEvent = function (msg) {
             break;
 
         case 'chat':
-            this.chat(msg.sender, msg.data);
+            this.chat(msg.sender, Utils.removeHTML(msg.data));
             break;
 
         default:
@@ -137,6 +137,16 @@ BSServer.prototype.getBingo = function () {
 };
 
 BSServer.prototype.createGame = function (user_id, game) {
+    // validate
+    if(typeof(game.name) !== "string" || typeof(game.size) !== "number"){
+        this.err(user_id, '<b>nice try.</b>');
+        return;
+    }
+    if(game.name.length < 1 || game.size < 3 || game.size < 10){
+        this.err(user_id, '<b>Error:</b> Please enter a game name and select a valid game size.');
+        return;
+    }
+
     var id = Utils.generateUUID();
     this.games[id] = {
         id: id,
@@ -152,10 +162,15 @@ BSServer.prototype.createGame = function (user_id, game) {
     };
 
     this.updateGame(id);
-    this.bus.emit('messageSend', new BSMessage('event', 'createGame', 'server', null, {user: user_id, game: id}));
+    this.updateBingo();
     this.log(user_id, this.players[user_id].name + ' created game "' + this.games[id].name + '"');
 };
 BSServer.prototype.joinGame = function (user_id, game_id) {
+    if(!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+
     var players = this.games[game_id].players;
     var found = false;
     for (var i = 0; i < players.length; i++) {
@@ -168,8 +183,8 @@ BSServer.prototype.joinGame = function (user_id, game_id) {
         this.games[game_id].players.push(user_id);
         this.log(user_id, this.players[user_id].name + ' joined game "' + this.games[game_id].name + '"');
     }
-    this.updateGame(game_id);
 
+    this.updateGame(game_id);
     this.updateBingo();
 };
 BSServer.prototype.leaveGame = function (user_id) {
@@ -200,6 +215,11 @@ BSServer.prototype.leaveGame = function (user_id) {
 };
 
 BSServer.prototype.addWord = function (user_id, game_id, word) {
+    if(!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+
     // only in words stage
     if(this.games[game_id].stage !== 'words') {
         return;
@@ -241,6 +261,11 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
     this.updateGame(game_id);
 };
 BSServer.prototype.removeWord = function (user_id, game_id, word) {
+    if(!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+
     // only in words stage
     if(this.games[game_id].stage !== 'words') {
         return;
@@ -265,6 +290,11 @@ BSServer.prototype.removeWord = function (user_id, game_id, word) {
     }
 };
 BSServer.prototype.buzzWord = function (user_id, game_id, word) {
+    if(!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return;
+    }
+
     // only in bingo stage
     if(this.games[game_id].stage !== 'bingo') {
         return;
@@ -373,6 +403,31 @@ BSServer.prototype.chat = function (user_id, message) {
 };
 BSServer.prototype.log = function (user_id, message) {
     this.bus.emit('messageSend', new BSMessage('event', 'log', user_id, null, message));
+};
+BSServer.prototype.err = function (user_id, message) {
+    this.bus.emit('messageSend', new BSMessage('event', 'log', 'server', user_id, message));
+};
+
+BSServer.prototype.getUsername = function (user_id) {
+    if(this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
+        return this.players[user_id].name;
+    } else {
+        return 'unknown player (' + user_id + ')';
+    }
+};
+
+BSServer.prototype.connected = function (user_id) {
+    this.log(user_id, this.getUsername(user_id) + ' connected.');
+};
+BSServer.prototype.disconnected = function (user_id) {
+    this.log(user_id, this.getUsername(user_id) + ' disconnected.');
+};
+BSServer.prototype.nickChanged = function (user_id, old_name, new_name) {
+    if(old_name !== null) {
+        this.log(user_id, old_name + ' changed nick to ' + new_name);
+    } else {
+        this.log(user_id, 'unknown player (' + user_id + ') changed nick to ' + new_name);
+    }
 };
 
 BSServer.prototype.addPlayer = function (user) {

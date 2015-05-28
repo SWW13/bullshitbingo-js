@@ -26,5 +26,8 @@ module.exports = {
         }
 
         return array;
+    },
+    removeHTML: function(string){
+        return string.replace(/<[^>]+>/ig, '');
     }
 };
