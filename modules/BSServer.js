@@ -137,12 +137,14 @@ BSServer.prototype.getBingo = function () {
 };
 
 BSServer.prototype.createGame = function (user_id, game) {
+    var size = parseInt(game.size);
+
     // validate
-    if(typeof(game.name) !== "string" || typeof(game.size) !== "number"){
+    if(typeof(game.name) !== "string" || size === NaN){
         this.err(user_id, '<b>nice try.</b>');
         return;
     }
-    if(game.name.length < 1 || game.size < 3 || game.size < 10){
+    if(game.name.length < 1 || size < 3 || size < 10){
         this.err(user_id, '<b>Error:</b> Please enter a game name and select a valid game size.');
         return;
     }
@@ -152,7 +154,7 @@ BSServer.prototype.createGame = function (user_id, game) {
         id: id,
         start: Date.now(),
         name: game.name,
-        size: game.size,
+        size: size,
         stage: 'words',
         words: [],
         boards: {},
