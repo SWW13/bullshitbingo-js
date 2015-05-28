@@ -83,8 +83,8 @@ BSServer.prototype.cleanup = function () {
         if (this.games.hasOwnProperty(key)) {
             var game = this.games[key];
 
-            // at least 2 players and not older than 1 day
-            if(game.players.length > 2 || game.start + 86400000 > Date.now()) {
+            // game not won and at least 2 players and not older than 1 day
+            if((game.players.length > 2 || game.start + 86400000 > Date.now()) && game.stage !== 'won') {
                 games_new[key] = game;
             } else {
                 changed = true;
@@ -399,7 +399,9 @@ BSServer.prototype.updateGame = function (game_id) {
 };
 
 BSServer.prototype.chat = function (user_id, message) {
-    this.bus.emit('messageSend', new BSMessage('event', 'chat', user_id, null, message));
+    if(message.length > 0) {
+        this.bus.emit('messageSend', new BSMessage('event', 'chat', user_id, null, message));
+    }
 };
 BSServer.prototype.log = function (user_id, message) {
     this.bus.emit('messageSend', new BSMessage('event', 'log', user_id, null, message));
