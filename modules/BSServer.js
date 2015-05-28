@@ -248,6 +248,7 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
     if (game.words.length === game.size * game.size) {
         this.games[game_id].stage = 'bingo';
         this.updateGame(game_id);
+        this.log('server', 'game "' + this.games[game_id].name + '" started.');
     }
 
     // add to last_words if new, cut at 50 words
@@ -417,8 +418,10 @@ BSServer.prototype.updateGame = function (game_id) {
 };
 
 BSServer.prototype.chat = function (user_id, message) {
-    if (message.length > 0) {
+    if (message.length > 0 && message.length <= 1024) {
         this.bus.emit('messageSend', new BSMessage('event', 'chat', user_id, null, message));
+    } else {
+        this.err(user_id, '<b>nice try.</b>');
     }
 };
 BSServer.prototype.log = function (user_id, message) {

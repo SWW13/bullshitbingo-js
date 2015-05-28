@@ -107,6 +107,7 @@ BSClient.prototype.render = function () {
 
         var create_game = document.getElementById('create-game');
         create_game.addEventListener('submit', function (event) {
+            event.preventDefault();
             that.createGame(event);
         });
         var button_join = document.getElementsByClassName('button-join');
@@ -185,7 +186,11 @@ BSClient.prototype.render = function () {
 };
 
 BSClient.prototype.sendMessage = function (event) {
-    this.setUsername();
+    if(!this.askUsername()){
+        this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
+        return;
+    }
+
     var message = document.getElementById('chat-message');
     if (message.length < 1 || message.length > 1024) {
         this.onChatMessage(null, '<b>Error:</b> messages must be 1 to 1024 characters long.');
@@ -215,19 +220,21 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
     chat.scrollTop = chat.scrollHeight;
 };
 
-BSClient.prototype.setUsername = function (username) {
-    if (this.user.hasName() && typeof(username) !== "string") {
-        return;
-    } else if (typeof(username) !== "string") {
-        username = prompt('Please enter your username:');
+BSClient.prototype.askUsername = function () {
+    if(this.user.hasName()) {
+        return true;
     }
 
-    if (typeof(username) === "string") {
+    return this.setUsername(prompt('Please enter your username:'));
+};
+BSClient.prototype.setUsername = function (username) {
+    if (typeof(username) === "string" && username.length > 0) {
         this.user.setName(username);
         this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
-    } else {
-        this.setUsername();
+        return true;
     }
+
+    return false;
 };
 BSClient.prototype.getUsername = function (user_id) {
     if (this.players.hasOwnProperty(user_id) && this.players[user_id].name !== null) {
@@ -243,7 +250,11 @@ BSClient.prototype.createGame = function () {
     var e_size = document.getElementById('game-size');
     var game_size = e_size.options[e_size.selectedIndex].value;
 
-    this.setUsername(username);
+    if(!this.setUsername(username)){
+        this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
+        return;
+    }
+
     var game = {
         name: game_name,
         size: game_size
@@ -253,7 +264,11 @@ BSClient.prototype.createGame = function () {
     this.render();
 };
 BSClient.prototype.joinGame = function (event) {
-    this.setUsername();
+    if(!this.askUsername()){
+        this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
+        return;
+    }
+
     var game_id = event.target.dataset.id;
     this.ws.send(new BSMessage('event', 'joinGame', this.user.id, 'server', {game_id: game_id}).toString());
 };
