@@ -49,6 +49,18 @@ d.run(function () {
         console.log('# New connection');
         var user = null, sendEvent = null;
 
+        sendEvent = bus.on('messageSend', function (msg) {
+            if (msg.receiver === null || user === null || msg.receiver === user.id) {
+                try {
+                    conn.send(msg.toString());
+                } catch (ex) {
+                    console.log('could not send message.');
+                    console.dir(ex);
+                }
+                console.dir(msg);
+            }
+        });
+
         conn.on('error', function (error) {
             console.err(error);
         });
@@ -90,18 +102,6 @@ d.run(function () {
                 bingo.disconnected(user.id);
             }
             bus.off(sendEvent);
-        });
-
-        sendEvent = bus.on('messageSend', function (msg) {
-            if (msg.receiver === null || user === null || msg.receiver === user.id) {
-                try {
-                    conn.send(msg.toString());
-                } catch (ex) {
-                    console.log('could not send message.');
-                    console.dir(ex);
-                }
-                console.dir(msg);
-            }
         });
     });
 });
