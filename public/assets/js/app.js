@@ -1,6 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var BSMessage = require('./BSMessage');
 var BSUser = require('./BSUser');
+var Utils = require('./Utils');
 var escape = require('escape-html');
 
 function BSClient(ws) {
@@ -10,6 +11,7 @@ function BSClient(ws) {
     this.last_words = [];
     this.user = new BSUser();
     this.game = null;
+    this.unread = 0;
 
     this.ws.send(new BSMessage('data', 'user', this.user.id, 'server', this.user.toObject()).toString());
     this.ws.send(new BSMessage('action', 'getData', this.user.id, 'server', null).toString());
@@ -157,8 +159,22 @@ BSClient.prototype.render = function () {
                 break;
 
             case 'bingo':
-                content.innerHTML = templates['bingo-board'].render({lines: this.getBoard()});
-                content.innerHTML += templates['bingo-board-overview'].render({players: this.getBoardOverview()});
+                var board = document.getElementById('board');
+                if(!board) {
+                    content.innerHTML = templates['bingo-board'].render({lines: this.getBoardLines()});
+                } else {
+                    var board = this.getBoard();
+
+                    if(board !== null) {
+                        for (var i = 0; i < board.length; i++) {
+                            var button = board.querySelector('button.button-buzzWord[data-id="'+ board[i].id +'"]');
+                            button.className = button.className.replace(/btn-[a-z]+]/, 'btn-' + board[i].active ? 'primary' : 'default');
+                        }
+                    }
+                }
+
+                var board_other = document.getElementById('board-other');
+                board_other.innerHTML += templates['bingo-board-overview'].render({players: this.getBoardOverview()});
 
                 var button_buzzWord = document.getElementsByClassName('button-buzzWord');
                 for (var i = 0; i < button_buzzWord.length; i++) {
@@ -170,7 +186,7 @@ BSClient.prototype.render = function () {
                 break;
 
             case 'won':
-                content.innerHTML = templates['won'].render({name: this.players[this.game.winner].name, lines: this.getBoard(this.game.winner)});
+                content.innerHTML = templates['won'].render({name: this.players[this.game.winner].name, lines: this.getBoardLines(this.game.winner)});
 
                 var go_back = document.getElementById('go-back');
                 go_back.addEventListener('click', function (event) {
@@ -184,6 +200,15 @@ BSClient.prototype.render = function () {
                 break;
         }
     }
+};
+BSClient.prototype.renderNavbarChat = function() {
+    if(Utils.isVisible(document.getElementById('chat-form'))) {
+        console.log('visible');
+        this.unread = 0;
+    }
+
+    var navbar_chat = document.getElementById('navbar-chat');
+    navbar_chat.innerHTML = templates['navbar-chat'].render({unread: this.unread});
 };
 
 BSClient.prototype.sendMessage = function (event) {
@@ -217,8 +242,12 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
         cell_message.innerHTML = '<i>' + message + '</i>';
     }
 
+    // scroll chat down
     var chat = document.getElementById('chat');
     chat.scrollTop = chat.scrollHeight;
+
+    this.unread++;
+    this.renderNavbarChat();
 };
 
 BSClient.prototype.askUsername = function () {
@@ -295,8 +324,15 @@ BSClient.prototype.getBoard = function (user_id) {
         user_id = this.user.id;
     }
 
-    return this.getLines(this.game.boards[user_id]);
+    if(this.game.boards.hasOwnProperty(user_id)) {
+        return this.game.boards[user_id];
+    } else {
+        return null;
+    }
 };
+BSClient.prototype.getBoardLines = function(user_id) {
+    return this.getLines(this.getBoard(user_id));
+}
 BSClient.prototype.getBoardOverview = function () {
     var players = this.game.players;
     var boards = [];
@@ -335,7 +371,7 @@ BSClient.prototype.getLines = function (board) {
 };
 
 module.exports = BSClient;
-},{"./BSMessage":2,"./BSUser":3,"escape-html":5}],2:[function(require,module,exports){
+},{"./BSMessage":2,"./BSUser":3,"./Utils":4,"escape-html":5}],2:[function(require,module,exports){
 function BSMessage(type, name, sender, receiver, data) {
     this.type = 'unknown';
     this.name = 'unknown';
@@ -504,6 +540,31 @@ module.exports = {
     },
     removeHTML: function (string) {
         return string.replace(/<[^>]+>/ig, '');
+    },
+    isVisible: function (element) {
+        /* Get the TOP position of a given element. */
+        function getPositionTop(element) {
+            var offset = 0;
+            while (element) {
+                offset += element.offsetTop;
+                element = element.offsetParent;
+            }
+            return offset;
+        }
+
+        if (!element) {
+            return false;
+        }
+
+        // Get the top and bottom position of the given element.
+        var posTop = getPositionTop(element);
+        var posBottom = posTop + element.offsetHeight;
+
+        // Get the top and bottom position of the *visible* part of the window.
+        var visibleTop = visibleTop = (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+        var visibleBottom = visibleTop + window.innerHeight;
+
+        return ((posBottom >= visibleTop) && (posTop <= visibleBottom));
     }
 };
 },{}],5:[function(require,module,exports){
@@ -531,12 +592,17 @@ var BSMessage = require('./modules/BSMessage.js');
 
 var ws = null, bingo = null;
 var content = document.getElementById('content');
-var leaveGame = document.getElementById('menu-logo').addEventListener('click', function (event) {
+document.getElementById('menu-logo').addEventListener('click', function (event) {
     if (bingo !== null) {
         bingo.leaveGame(event);
     }
 });
-var sendMessage = document.getElementById('chat-form').addEventListener('submit', function (event) {
+document.addEventListener('scroll', function (event) {
+    if (bingo !== null) {
+        bingo.renderNavbarChat();
+    }
+});
+document.getElementById('chat-form').addEventListener('submit', function (event) {
     event.preventDefault();
     if (bingo !== null) {
         bingo.sendMessage(event);
@@ -562,7 +628,7 @@ function onMessage(event) {
 function onClose(event) {
     bingo = null;
     content.innerHTML = templates['connecting'].render({error: event});
-    window.setTimeout(connect, 500);
+    window.setTimeout(connect, 5000);
     console.log(event);
 }
 

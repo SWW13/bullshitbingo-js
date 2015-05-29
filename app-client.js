@@ -4,12 +4,17 @@ var BSMessage = require('./modules/BSMessage.js');
 
 var ws = null, bingo = null;
 var content = document.getElementById('content');
-var leaveGame = document.getElementById('menu-logo').addEventListener('click', function (event) {
+document.getElementById('menu-logo').addEventListener('click', function (event) {
     if (bingo !== null) {
         bingo.leaveGame(event);
     }
 });
-var sendMessage = document.getElementById('chat-form').addEventListener('submit', function (event) {
+document.addEventListener('scroll', function (event) {
+    if (bingo !== null) {
+        bingo.renderNavbarChat();
+    }
+});
+document.getElementById('chat-form').addEventListener('submit', function (event) {
     event.preventDefault();
     if (bingo !== null) {
         bingo.sendMessage(event);
@@ -35,7 +40,7 @@ function onMessage(event) {
 function onClose(event) {
     bingo = null;
     content.innerHTML = templates['connecting'].render({error: event});
-    window.setTimeout(connect, 500);
+    window.setTimeout(connect, 5000);
     console.log(event);
 }
 

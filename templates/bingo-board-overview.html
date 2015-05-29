@@ -1,25 +1,18 @@
-<div>
-    <h2>
-        Users Overview
-    </h2>
-    {{#players}}
-    <div class="board-other-container">
-        {{name}}
-        <table class="board-other" class="table table-bordered">
-            <tbody>
-            {{#lines}}
-            <tr>
-                {{#.}}
-                <td class="bg-{{css_class}}">
-                    ╳
-                </td>
-                {{/.}}
-            </tr>
-            {{/lines}}
-            </tbody>
-        </table>
-    </div>
-    {{/players}}
-
-    <div class="clearfix"></div>
+{{#players}}
+<div class="board-other-container">
+    {{name}}
+    <table class="board-other" class="table table-bordered">
+        <tbody>
+        {{#lines}}
+        <tr>
+            {{#.}}
+            <td class="bg-{{css_class}}">
+                ╳
+            </td>
+            {{/.}}
+        </tr>
+        {{/lines}}
+        </tbody>
+    </table>
 </div>
+{{/players}}

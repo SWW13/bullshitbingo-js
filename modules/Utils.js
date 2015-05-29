@@ -29,5 +29,30 @@ module.exports = {
     },
     removeHTML: function (string) {
         return string.replace(/<[^>]+>/ig, '');
+    },
+    isVisible: function (element) {
+        /* Get the TOP position of a given element. */
+        function getPositionTop(element) {
+            var offset = 0;
+            while (element) {
+                offset += element.offsetTop;
+                element = element.offsetParent;
+            }
+            return offset;
+        }
+
+        if (!element) {
+            return false;
+        }
+
+        // Get the top and bottom position of the given element.
+        var posTop = getPositionTop(element);
+        var posBottom = posTop + element.offsetHeight;
+
+        // Get the top and bottom position of the *visible* part of the window.
+        var visibleTop = visibleTop = (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+        var visibleBottom = visibleTop + window.innerHeight;
+
+        return ((posBottom >= visibleTop) && (posTop <= visibleBottom));
     }
 };
