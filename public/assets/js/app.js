@@ -275,7 +275,7 @@ BSClient.prototype.joinGame = function (event) {
 };
 BSClient.prototype.leaveGame = function (event) {
     this.game = null;
-    this.ws.send(new BSMessage('event', 'leaveGame', this.user.id, 'server'));
+    this.ws.send(new BSMessage('event', 'leaveGame', this.user.id, 'server').toString());
     this.render();
 };
 BSClient.prototype.addWord = function (word) {

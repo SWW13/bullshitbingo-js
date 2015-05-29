@@ -1,6 +1,6 @@
 var domain = require('domain');
 var config = require('config');
-var ws = require('nodejs-websocket');
+var ws = require('ws');
 var d = domain.create();
 
 var BSServer = require('./modules/BSServer.js');
@@ -41,11 +41,19 @@ d.run(function () {
 
     // websocket
     var websocket_config = config.get('websocket');
-    var server = ws.createServer(function (conn) {
+    var server = new ws.Server({ host: websocket_config.hostname, port: websocket_config.port });
+    server.on('error', function onError(error) {
+        console.err(error);
+    });
+    server.on('connection', function connection(conn) {
         console.log('# New connection');
         var user = null, sendEvent = null;
 
-        conn.on('text', function (data) {
+        conn.on('error', function (error) {
+            console.err(error);
+        });
+
+        conn.on('message', function (data, flags) {
             var msg = BSMessage.fromString(data);
 
             console.dir(msg);
@@ -87,7 +95,7 @@ d.run(function () {
         sendEvent = bus.on('messageSend', function (msg) {
             if (msg.receiver === null || user === null || msg.receiver === user.id) {
                 try {
-                    conn.sendText(msg.toString());
+                    conn.send(msg.toString());
                 } catch (ex) {
                     console.log('could not send message.');
                     console.dir(ex);
@@ -95,5 +103,5 @@ d.run(function () {
                 console.dir(msg);
             }
         });
-    }).listen(websocket_config.port, websocket_config.hostname);
+    });
 });
