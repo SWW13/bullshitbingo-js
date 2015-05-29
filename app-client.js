@@ -3,6 +3,7 @@ var BSUser = require('./modules/BSUser.js');
 var BSMessage = require('./modules/BSMessage.js');
 
 var ws = null, bingo = null;
+var content = document.getElementById('content');
 var leaveGame = document.getElementById('menu-logo').addEventListener('click', function (event) {
     if (bingo !== null) {
         bingo.leaveGame(event);
