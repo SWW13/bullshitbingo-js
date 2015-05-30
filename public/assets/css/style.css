@@ -1,9 +1,11 @@
 body {
     padding-top: 50px;
 }
+
 #content {
     padding: 40px 15px 5px 15px;
 }
+
 #chat-container {
     padding: 5px 15px 40px 15px;
 }
@@ -43,11 +45,13 @@ body {
     text-align: center;
     width: 10%;
 }
+
 #chat-table tr td:nth-child(2) {
     text-align: right;
     width: 15%;
     padding-right: 10px;
 }
+
 #chat-table tr td:nth-child(3) {
     text-align: left;
 }

@@ -33,12 +33,11 @@ BSClient.prototype.onMessage = function (msg_data) {
 
         default:
             console.warn('BSClient.onMessage(msg): unknown type: ' + msg.type);
-            return false;
             break;
     }
 };
 BSClient.prototype.onAction = function (msg) {
-    return false;
+    console.warn('BSClient.onAction(msg): unknown name: ' + msg.name);
 };
 BSClient.prototype.onEvent = function (msg) {
     switch (msg.name) {
@@ -48,8 +47,7 @@ BSClient.prototype.onEvent = function (msg) {
             break;
 
         default:
-            console.warn('BSServer.onEvent(msg): unknown name: ' + msg.name);
-            return false;
+            console.warn('BSClient.onEvent(msg): unknown name: ' + msg.name);
             break;
     }
 };
@@ -58,18 +56,15 @@ BSClient.prototype.onData = function (msg) {
         case 'bingo':
             this.fromString(msg.data);
             this.render();
-            console.log(this);
             break;
 
         case 'game':
             this.game = msg.data;
             this.render();
-            console.log(this);
             break;
 
         default:
             console.warn('BSClient.onData(msg): unknown name: ' + msg.name);
-            return false;
             break;
     }
 };
@@ -101,6 +96,7 @@ BSClient.prototype.render = function () {
     var that = this;
     var content = document.getElementById('content');
     var navbar = document.getElementById('navbar');
+    var i;
 
     navbar.innerHTML = templates['navbar'].render({game: this.game});
 
@@ -129,7 +125,7 @@ BSClient.prototype.render = function () {
                     wordlist = document.getElementById('wordlist-table');
 
                     var button_addLastWord = document.getElementsByClassName('button-addLastWord');
-                    for (var i = 0; i < button_addLastWord.length; i++) {
+                    for (i = 0; i < button_addLastWord.length; i++) {
                         button_addLastWord[i].addEventListener('click', function (event) {
                             that.addWord(this.dataset.word);
                         });
@@ -150,39 +146,38 @@ BSClient.prototype.render = function () {
                     word.value = '';
                 });
                 var button_removeWord = document.getElementsByClassName('button-removeWord');
-                for (var i = 0; i < button_removeWord.length; i++) {
+                for (i = 0; i < button_removeWord.length; i++) {
                     button_removeWord[i].addEventListener('click', function (event) {
                         that.removeWord(this.dataset.id);
-                        console.log(event);
                     });
                 }
                 break;
 
             case 'bingo':
-                var board = document.getElementById('board');
-                if(!board) {
+                var boardEl = document.getElementById('board');
+                if (!boardEl) {
                     content.innerHTML = templates['bingo-board'].render({lines: this.getBoardLines()});
+
+                    var button_buzzWord = document.getElementsByClassName('button-buzzWord');
+                    for (i = 0; i < button_buzzWord.length; i++) {
+                        button_buzzWord[i].addEventListener('click', function (event) {
+                            event.preventDefault();
+                            that.buzzWord(this.dataset.id);
+                        });
+                    }
                 } else {
                     var board = this.getBoard();
 
-                    if(board !== null) {
-                        for (var i = 0; i < board.length; i++) {
-                            var button = board.querySelector('button.button-buzzWord[data-id="'+ board[i].id +'"]');
-                            button.className = button.className.replace(/btn-[a-z]+]/, 'btn-' + board[i].active ? 'primary' : 'default');
+                    if (board !== null) {
+                        for (i = 0; i < board.length; i++) {
+                            var button = boardEl.querySelector('button.button-buzzWord[data-id="' + board[i].id + '"]');
+                            button.className = button.className.replace(/btn-[a-z]+/, 'btn-' + (board[i].active ? 'primary' : 'default'));
                         }
                     }
                 }
 
                 var board_other = document.getElementById('board-other');
-                board_other.innerHTML += templates['bingo-board-overview'].render({players: this.getBoardOverview()});
-
-                var button_buzzWord = document.getElementsByClassName('button-buzzWord');
-                for (var i = 0; i < button_buzzWord.length; i++) {
-                    button_buzzWord[i].addEventListener('click', function (event) {
-                        event.preventDefault();
-                        that.buzzWord(this.dataset.id);
-                    });
-                }
+                board_other.innerHTML = templates['bingo-board-overview'].render({players: this.getBoardOverview()});
                 break;
 
             case 'won':
@@ -201,9 +196,8 @@ BSClient.prototype.render = function () {
         }
     }
 };
-BSClient.prototype.renderNavbarChat = function() {
-    if(Utils.isVisible(document.getElementById('chat-form'))) {
-        console.log('visible');
+BSClient.prototype.renderNavbarChat = function () {
+    if (Utils.isVisible(document.getElementById('chat-form'))) {
         this.unread = 0;
     }
 
@@ -212,7 +206,7 @@ BSClient.prototype.renderNavbarChat = function() {
 };
 
 BSClient.prototype.sendMessage = function (event) {
-    if(!this.askUsername()){
+    if (!this.askUsername()) {
         this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
         return;
     }
@@ -251,7 +245,7 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
 };
 
 BSClient.prototype.askUsername = function () {
-    if(this.user.hasName()) {
+    if (this.user.hasName()) {
         return true;
     }
 
@@ -280,7 +274,7 @@ BSClient.prototype.createGame = function () {
     var e_size = document.getElementById('game-size');
     var game_size = e_size.options[e_size.selectedIndex].value;
 
-    if(!this.setUsername(username)){
+    if (!this.setUsername(username)) {
         this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
         return;
     }
@@ -294,7 +288,7 @@ BSClient.prototype.createGame = function () {
     this.render();
 };
 BSClient.prototype.joinGame = function (event) {
-    if(!this.askUsername()){
+    if (!this.askUsername()) {
         this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
         return;
     }
@@ -324,13 +318,13 @@ BSClient.prototype.getBoard = function (user_id) {
         user_id = this.user.id;
     }
 
-    if(this.game.boards.hasOwnProperty(user_id)) {
+    if (this.game.boards.hasOwnProperty(user_id)) {
         return this.game.boards[user_id];
     } else {
         return null;
     }
 };
-BSClient.prototype.getBoardLines = function(user_id) {
+BSClient.prototype.getBoardLines = function (user_id) {
     return this.getLines(this.getBoard(user_id));
 }
 BSClient.prototype.getBoardOverview = function () {
@@ -351,7 +345,7 @@ BSClient.prototype.getLines = function (board) {
     var lines = [];
     var line = [];
 
-    if (board !== undefined) {
+    if (board !== undefined && board !== null) {
         for (var i = 0; i < board.length; i++) {
             if (i % this.game.size === 0 && i > 0) {
                 lines.push(line);
@@ -491,21 +485,6 @@ BSUser.prototype.toObject = function () {
 BSUser.prototype.toString = function () {
     return JSON.stringify(this.toObject());
 };
-/*
- BSUser.fromString = function(user) {
- if(user !== undefined && user !== null) {
- if(typeof(user) === "string") {
- user = JSON.parse(user);
- }
- var bs_user = new BSUser(false, true);
- bs_user.id = user.id;
- bs_user.name = user.name;
-
- return bs_user;
- }
- return null;
- }
- */
 
 module.exports = BSUser;
 },{"./Utils.js":4}],4:[function(require,module,exports){

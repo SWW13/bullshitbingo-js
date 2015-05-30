@@ -40,10 +40,12 @@ BSServer.prototype.onAction = function (msg) {
 BSServer.prototype.onEvent = function (msg) {
     switch (msg.name) {
         case 'newGame':
+            this.leaveGame(msg.sender);
             this.createGame(msg.sender, msg.data);
             break;
 
         case 'joinGame':
+            this.leaveGame(msg.sender);
             this.joinGame(msg.sender, msg.data.game_id);
             break;
 
@@ -142,7 +144,7 @@ BSServer.prototype.createGame = function (user_id, game) {
     var size = parseInt(game.size);
 
     // validate
-    if (typeof(game.name) !== "string" || size === NaN) {
+    if (typeof(game.name) !== "string" || isNaN(size)) {
         this.err(user_id, '<b>nice try.</b>');
         return;
     }
@@ -231,9 +233,10 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
     }
 
     // add word to game if new
+    var i;
     var words = this.games[game_id].words;
     var found = false;
-    for (var i = 0; i < words.length; i++) {
+    for (i = 0; i < words.length; i++) {
         if (words[i].word === word) {
             found = true;
             break;
@@ -253,7 +256,7 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
 
     // add to last_words if new, cut at 50 words
     found = false;
-    for (var i = 0; i < this.last_words.length; i++) {
+    for (i = 0; i < this.last_words.length; i++) {
         if (this.last_words[i].word === word) {
             found = true;
             break;
@@ -323,7 +326,7 @@ BSServer.prototype.buzzWord = function (user_id, game_id, word_id) {
         }
     }
 
-    if(found) {
+    if (found) {
         this.updateGame(game_id);
     } else {
         this.err(user_id, '<b>Error:</b> Word not found.');
@@ -336,8 +339,9 @@ BSServer.prototype.updateBingo = function () {
 BSServer.prototype.updateGame = function (game_id) {
     var game = this.games[game_id];
     var words = [];
+    var i;
 
-    for (var i = 0; i < game.words.length; i++) {
+    for (i = 0; i < game.words.length; i++) {
         this.games[game_id].words[i].id = i;
 
         words.push({
@@ -347,14 +351,13 @@ BSServer.prototype.updateGame = function (game_id) {
         });
     }
 
-    for (var i = 0; i < game.players.length; i++) {
+    // create boards, check win
+    for (i = 0; i < game.players.length; i++) {
         var player_id = game.players[i];
 
         if (game.stage === 'bingo') {
             if (game.boards[player_id] === undefined || game.boards[player_id] === null) {
-                var board = Utils.shuffle(JSON.parse(JSON.stringify(words)));
-
-                this.games[game_id].boards[player_id] = board;
+                this.games[game_id].boards[player_id] = Utils.shuffle(JSON.parse(JSON.stringify(words)));
             } else {
                 var win = false, win_tmp;
                 var board = game.boards[player_id];
@@ -391,13 +394,13 @@ BSServer.prototype.updateGame = function (game_id) {
                 // check for win - diagonal
                 var win_tmp_left = true;
                 var win_tmp_right = true;
-                for (var i = 0; i < game.size && !win && (win_tmp_left || win_tmp_right); i++) {
+                for (var n = 0; n < game.size && !win && (win_tmp_left || win_tmp_right); n++) {
                     // left up to right down
-                    if (board[i * game.size + i].active === false) {
+                    if (board[n * game.size + n].active === false) {
                         win_tmp_left = false;
                     }
                     // right up to left down
-                    if (board[(i + 1) * game.size - 1 - i].active === false) {
+                    if (board[(n + 1) * game.size - 1 - n].active === false) {
                         win_tmp_right = false;
                     }
                 }
@@ -412,8 +415,10 @@ BSServer.prototype.updateGame = function (game_id) {
                 }
             }
         }
+    }
 
-        this.bus.emit('messageSend', new BSMessage('data', 'game', 'server', player_id, this.games[game_id]));
+    for (i = 0; i < game.players.length; i++) {
+        this.bus.emit('messageSend', new BSMessage('data', 'game', 'server', game.players[i], this.games[game_id]));
     }
 };
 

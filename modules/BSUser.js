@@ -60,20 +60,5 @@ BSUser.prototype.toObject = function () {
 BSUser.prototype.toString = function () {
     return JSON.stringify(this.toObject());
 };
-/*
- BSUser.fromString = function(user) {
- if(user !== undefined && user !== null) {
- if(typeof(user) === "string") {
- user = JSON.parse(user);
- }
- var bs_user = new BSUser(false, true);
- bs_user.id = user.id;
- bs_user.name = user.name;
-
- return bs_user;
- }
- return null;
- }
- */
 
 module.exports = BSUser;

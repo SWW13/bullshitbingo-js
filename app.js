@@ -50,7 +50,7 @@ d.run(function () {
         var user = null, sendEvent = null;
 
         sendEvent = bus.on('messageSend', function (msg) {
-            if (msg.receiver === null || user === null || msg.receiver === user.id) {
+            if (msg.receiver === null || (user !== null && msg.receiver === user.id)) {
                 try {
                     conn.send(msg.toString());
                 } catch (ex) {
@@ -58,6 +58,8 @@ d.run(function () {
                     console.dir(ex);
                 }
                 console.dir(msg);
+            } else if (user === null) {
+                console.warn('unknown user');
             }
         });
 
