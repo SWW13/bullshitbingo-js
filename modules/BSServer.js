@@ -172,8 +172,7 @@ BSServer.prototype.createGame = function (user_id, game) {
     this.log(user_id, this.players[user_id].name + ' created game "' + this.games[id].name + '"');
 };
 BSServer.prototype.joinGame = function (user_id, game_id) {
-    if (!this.games.hasOwnProperty(game_id)) {
-        this.err(user_id, '<b>Error:</b> Game not found.');
+    if (!this.check(game_id)) {
         return;
     }
 
@@ -217,18 +216,12 @@ BSServer.prototype.leaveGame = function (user_id) {
         }
     }
 
+    this.bus.emit('messageSend', new BSMessage('data', 'game', 'server', user_id, null));
     this.updateBingo();
 };
 
 BSServer.prototype.addWord = function (user_id, game_id, word) {
-    if (!this.games.hasOwnProperty(game_id)) {
-        this.err(user_id, '<b>Error:</b> Game not found.');
-        return;
-    }
-
-    // only in words stage
-    if (this.games[game_id].stage !== 'words') {
-        this.err(user_id, 'nice try.');
+    if (!this.check(game_id, user_id, 'words')) {
         return;
     }
 
@@ -237,13 +230,15 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
     var words = this.games[game_id].words;
     var found = false;
     for (i = 0; i < words.length; i++) {
-        if (words[i].word === word) {
+        if (words[i].word.toLowerCase() === word.toLowerCase()) {
             found = true;
             break;
         }
     }
     if (!found) {
         this.games[game_id].words.push({id: -1, word: word, user: this.players[user_id]});
+    } else {
+        this.err(user_id, '<b>Error:</b> Word already exists. (Words are Case Insensitive)');
     }
 
     // switch stage if word limit reached
@@ -257,34 +252,25 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
     // add to last_words if new, cut at 50 words
     found = false;
     for (i = 0; i < this.last_words.length; i++) {
-        if (this.last_words[i].word === word) {
+        if (this.last_words[i].word.toLowerCase() === word.toLowerCase()) {
             found = true;
             break;
         }
     }
     if (!found) {
-        this.last_words.push({word: word, user: this.players[user_id]});
+        this.last_words.unshift({word: word, user: this.players[user_id]});
     }
     this.last_words = this.last_words.slice(0, 50);
 
     this.updateGame(game_id);
+    this.updateBingo();
 };
 BSServer.prototype.removeWord = function (user_id, game_id, word_id) {
-    if (!this.games.hasOwnProperty(game_id)) {
-        this.err(user_id, '<b>Error:</b> Game not found.');
-        return;
-    }
-    if (!this.games[game_id].words.hasOwnProperty(word_id)) {
-        this.err(user_id, '<b>Error:</b> Word not found.');
+    if (!this.check(game_id, user_id, 'words')) {
         return;
     }
 
-    // only in words stage
-    if (this.games[game_id].stage !== 'words') {
-        this.err(user_id, 'nice try.');
-        return;
-    }
-
+    var found = false;
     var word = null;
     var words = this.games[game_id].words;
     this.games[game_id].words = [];
@@ -292,25 +278,20 @@ BSServer.prototype.removeWord = function (user_id, game_id, word_id) {
         if (i !== word_id) {
             this.games[game_id].words.push(words[i]);
         } else {
+            found = true;
             this.log(user_id, this.players[user_id].name + ' removed word "' + words[i].word + '" in game "' + this.games[game_id].name + '"');
         }
     }
 
-    this.updateGame(game_id);
-};
-BSServer.prototype.buzzWord = function (user_id, game_id, word_id) {
-    if (!this.games.hasOwnProperty(game_id)) {
-        this.err(user_id, '<b>Error:</b> Game not found.');
-        return;
-    }
-    if (!this.games[game_id].boards.hasOwnProperty(user_id)) {
-        this.err(user_id, '<b>Error:</b> User board not found.');
-        return;
+    if(!found) {
+        this.err(user_id, '<b>Error:</b> Word not found.');
     }
 
-    // only in bingo stage
-    if (this.games[game_id].stage !== 'bingo') {
-        this.err(user_id, 'nice try.');
+    this.updateGame(game_id);
+    this.updateBingo();
+};
+BSServer.prototype.buzzWord = function (user_id, game_id, word_id) {
+    if (!this.check(game_id, user_id, 'bingo')) {
         return;
     }
 
@@ -420,6 +401,51 @@ BSServer.prototype.updateGame = function (game_id) {
     for (i = 0; i < game.players.length; i++) {
         this.bus.emit('messageSend', new BSMessage('data', 'game', 'server', game.players[i], this.games[game_id]));
     }
+};
+
+BSServer.prototype.check = function(game_id, user_id, stage) {
+    // check if game exsists
+    if (!this.games.hasOwnProperty(game_id)) {
+        this.err(user_id, '<b>Error:</b> Game not found.');
+        return false;
+    }
+    var game = this.games[game_id];
+
+    // stage
+    if(stage !== undefined) {
+        // check stage
+        if (game.stage !== stage) {
+            this.err(user_id, 'nice try.');
+            return false;
+        }
+    }
+
+    // user
+    if(user_id !== undefined) {
+        // check if user is in game
+        var found = false;
+        for(var i = 0; i < game.players.length; i++) {
+            if(game.players[i] === user_id) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            this.err(user_id, '<b>Error:</b> User not in game.');
+            return false;
+        }
+
+        // bingo
+        if(game.stage === 'bingo') {
+            // check if user board exists
+            if (!this.games[game_id].boards.hasOwnProperty(user_id)) {
+                this.err(user_id, '<b>Error:</b> User board not found.');
+                return false;
+            }
+        }
+    }
+
+    return true;
 };
 
 BSServer.prototype.chat = function (user_id, message) {

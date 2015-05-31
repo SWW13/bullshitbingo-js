@@ -101,16 +101,23 @@ BSClient.prototype.render = function () {
     navbar.innerHTML = templates['navbar'].render({game: this.game});
 
     if (this.game === null) {
-        content.innerHTML = templates['create-game'].render({username: this.user.name});
-        content.innerHTML += templates['game-list'].render({games: this.games});
+        var game_list = document.getElementById('game-list');
 
-        var create_game = document.getElementById('create-game');
-        create_game.addEventListener('submit', function (event) {
-            event.preventDefault();
-            that.createGame(event);
-        });
+        if(!game_list) {
+            content.innerHTML = templates['game-list'].render({games: this.games});
+            content.innerHTML += templates['create-game'].render({username: this.user.name});
+
+            var create_game = document.getElementById('create-game');
+            create_game.addEventListener('submit', function (event) {
+                event.preventDefault();
+                that.createGame(event);
+            });
+        } else {
+            game_list.outerHTML = templates['game-list'].render({games: this.games});
+        }
+
         var button_join = document.getElementsByClassName('button-join');
-        for (var i = 0; i < button_join.length; i++) {
+        for (i = 0; i < button_join.length; i++) {
             button_join[i].addEventListener('click', function (event) {
                 that.joinGame(event);
             });
@@ -196,13 +203,19 @@ BSClient.prototype.render = function () {
         }
     }
 };
-BSClient.prototype.renderNavbarChat = function () {
+BSClient.prototype.renderNavbar = function () {
     if (Utils.isVisible(document.getElementById('chat-form'))) {
         this.unread = 0;
     }
 
-    var navbar_chat = document.getElementById('navbar-chat');
-    navbar_chat.innerHTML = templates['navbar-chat'].render({unread: this.unread});
+    var navbar_right = document.getElementById('navbar-right');
+    navbar_right.innerHTML = templates['navbar-right'].render({unread: this.unread, username: this.user.name});
+
+    var that = this;
+    document.getElementById('edit-username').addEventListener('click', function (event) {
+        event.preventDefault();
+        that.askUsername(true);
+    });
 };
 
 BSClient.prototype.sendMessage = function (event) {
@@ -241,11 +254,11 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
     chat.scrollTop = chat.scrollHeight;
 
     this.unread++;
-    this.renderNavbarChat();
+    this.renderNavbar();
 };
 
-BSClient.prototype.askUsername = function () {
-    if (this.user.hasName()) {
+BSClient.prototype.askUsername = function (change) {
+    if (!change && this.user.hasName()) {
         return true;
     }
 
@@ -304,7 +317,6 @@ BSClient.prototype.leaveGame = function (event) {
 BSClient.prototype.addWord = function (word) {
     if (word !== '') {
         this.ws.send(new BSMessage('event', 'addWord', this.user.id, 'server', {game_id: this.game.id, word: word}).toString());
-        this.render();
     }
 };
 BSClient.prototype.removeWord = function (word_id) {
@@ -578,7 +590,7 @@ document.getElementById('menu-logo').addEventListener('click', function (event) 
 });
 document.addEventListener('scroll', function (event) {
     if (bingo !== null) {
-        bingo.renderNavbarChat();
+        bingo.renderNavbar();
     }
 });
 document.getElementById('chat-form').addEventListener('submit', function (event) {

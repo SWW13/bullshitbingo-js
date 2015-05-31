@@ -11,7 +11,7 @@ document.getElementById('menu-logo').addEventListener('click', function (event) 
 });
 document.addEventListener('scroll', function (event) {
     if (bingo !== null) {
-        bingo.renderNavbarChat();
+        bingo.renderNavbar();
     }
 });
 document.getElementById('chat-form').addEventListener('submit', function (event) {
