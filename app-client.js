@@ -31,17 +31,14 @@ function connect() {
 
 function onOpen(event) {
     bingo = new BSClient(ws);
-    console.log(event);
 };
 function onMessage(event) {
     bingo.onMessage(event.data);
-    console.log(event);
 }
 function onClose(event) {
     bingo = null;
     content.innerHTML = templates['connecting'].render({error: event});
     window.setTimeout(connect, 5000);
-    console.log(event);
 }
 
 connect();
