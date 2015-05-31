@@ -34,30 +34,26 @@ body {
 
 #chat {
     max-height: 500px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+#chat-form {
+    margin-top: 15px;
 }
 
-#chat-table tr td {
-    padding: 0;
+#chat .chat-time {
+    font-style: italic;
 }
-
-#chat-table tr td:nth-child(1) {
-    text-align: center;
-    width: 10%;
+#chat .chat-log {
+    margin-left: 10px;
+    font-style: italic;
 }
-
-#chat-table tr td:nth-child(2) {
-    text-align: right;
-    width: 15%;
-    padding-right: 10px;
+#chat .chat-username {
+    margin-left: 10px;
+    font-weight: bold;
 }
-
-#chat-table tr td:nth-child(3) {
+#chat .chat-message {
     text-align: left;
-}
-
-.borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th {
-    border: none;
 }
 
 /* Always float the navbar header */

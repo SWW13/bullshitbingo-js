@@ -105,7 +105,7 @@ BSClient.prototype.render = function () {
 
         if(!game_list) {
             content.innerHTML = templates['game-list'].render({games: this.games});
-            content.innerHTML += templates['create-game'].render({username: this.user.name});
+            content.innerHTML += templates['create-game'].render({});
 
             var create_game = document.getElementById('create-game');
             create_game.addEventListener('submit', function (event) {
@@ -233,24 +233,18 @@ BSClient.prototype.sendMessage = function (event) {
     }
 };
 BSClient.prototype.onChatMessage = function (user_id, message) {
-    var chat_table = document.getElementById('chat-table');
-    var row = chat_table.insertRow(-1);
-    var cell_time = row.insertCell(0);
-    var cell_user = row.insertCell(1);
-    var cell_message = row.insertCell(2);
+    var chat = document.getElementById('chat');
     var d = new Date();
 
-    cell_time.innerHTML = '<i>' + ('00' + d.getHours()).slice(-2) + ':' + ('00' + d.getMinutes()).slice(-2) + ':' + ('00' + d.getSeconds()).slice(-2) + '</i>';
+    var time = ('00' + d.getHours()).slice(-2) + ':' + ('00' + d.getMinutes()).slice(-2) + ':' + ('00' + d.getSeconds()).slice(-2);
 
     if (user_id !== null) {
-        cell_user.innerHTML = '<b>&lt;' + this.getUsername(user_id) + '&gt;</b>';
-        cell_message.innerHTML = message;
+        chat.innerHTML += templates['chat-row'].render({time: time, username: this.getUsername(user_id), message: message});
     } else {
-        cell_message.innerHTML = '<i>' + message + '</i>';
+        chat.innerHTML += templates['chat-row-log'].render({time: time, message: message});
     }
 
-    // scroll chat down
-    var chat = document.getElementById('chat');
+    // scroll down
     chat.scrollTop = chat.scrollHeight;
 
     this.unread++;
@@ -282,15 +276,14 @@ BSClient.prototype.getUsername = function (user_id) {
 };
 
 BSClient.prototype.createGame = function () {
-    var username = document.getElementById('game-username').value;
-    var game_name = document.getElementById('game-name').value;
-    var e_size = document.getElementById('game-size');
-    var game_size = e_size.options[e_size.selectedIndex].value;
-
-    if (!this.setUsername(username)) {
+    if (!this.askUsername()) {
         this.onChatMessage(null, '<b>Error:</b> Please enter a username.');
         return;
     }
+
+    var game_name = document.getElementById('game-name').value;
+    var e_size = document.getElementById('game-size');
+    var game_size = e_size.options[e_size.selectedIndex].value;
 
     var game = {
         name: game_name,
