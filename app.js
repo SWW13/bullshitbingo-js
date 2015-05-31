@@ -43,7 +43,7 @@ d.run(function () {
     var websocket_config = config.get('websocket');
     var server = new ws.Server({ host: websocket_config.hostname, port: websocket_config.port });
     server.on('error', function onError(error) {
-        console.err(error);
+        console.error(error);
     });
     server.on('connection', function connection(conn) {
         console.log('# New connection');
@@ -54,7 +54,7 @@ d.run(function () {
                 try {
                     conn.send(msg.toString());
                 } catch (ex) {
-                    console.log('could not send message.');
+                    console.error('could not send message.');
                     console.dir(ex);
                 }
                 console.dir(msg);
@@ -64,13 +64,13 @@ d.run(function () {
         });
 
         conn.on('error', function (error) {
-            console.err(error);
+            console.error(error);
         });
 
         conn.on('message', function (data, flags) {
             var msg = BSMessage.fromString(data);
 
-            console.dir(msg);
+            console.log(msg);
             bingo.onMessage(msg);
 
             if (msg.type === 'data' && msg.name === 'user') {
@@ -82,7 +82,7 @@ d.run(function () {
                     (msg.name === null || typeof(msg.name) === "string")
                     ) {
                     user = user_new;
-                    console.dir(user);
+                    console.log(user);
                     bingo.addPlayer(user);
 
                     if (user_old === null) {
