@@ -346,7 +346,7 @@ BSServer.prototype.updateGame = function (game_id) {
                 var line, row;
 
                 // activate other words
-                for(var j = 0; j < game.size; j++) {
+                for(var j = 0; j < board.length; j++) {
                     if(board[j].active){
                         this.games[game_id].words[board[j].id].active = true;
                     }
