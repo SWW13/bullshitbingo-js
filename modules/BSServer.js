@@ -236,7 +236,7 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
         }
     }
     if (!found) {
-        this.games[game_id].words.push({id: -1, word: word, user: this.players[user_id]});
+        this.games[game_id].words.push({id: -1, word: word, active: false, user: this.players[user_id]});
     } else {
         this.err(user_id, '<b>Error:</b> Word already exists. (Words are Case Insensitive)');
     }
@@ -318,21 +318,22 @@ BSServer.prototype.updateBingo = function () {
     this.bus.emit('messageSend', new BSMessage('data', 'bingo', 'server', null, this.getBingo()));
 };
 BSServer.prototype.updateGame = function (game_id) {
-    var game = this.games[game_id];
     var words = [];
     var i;
 
-    for (i = 0; i < game.words.length; i++) {
+    for (i = 0; i < this.games[game_id].words.length; i++) {
         this.games[game_id].words[i].id = i;
+        this.games[game_id].words[i].active = false;
 
         words.push({
             id: i,
-            word: game.words[i].word,
+            word: this.games[game_id].words[i].word,
             active: false
         });
     }
 
     // create boards, check win
+    var game = this.games[game_id];
     for (i = 0; i < game.players.length; i++) {
         var player_id = game.players[i];
 
@@ -343,6 +344,13 @@ BSServer.prototype.updateGame = function (game_id) {
                 var win = false, win_tmp;
                 var board = game.boards[player_id];
                 var line, row;
+
+                // activate other words
+                for(var j = 0; j < game.size; j++) {
+                    if(board[j].active){
+                        this.games[game_id].words[board[j].id].active = true;
+                    }
+                }
 
                 // check for win - horizontal
                 for (line = 0; line < game.size && !win; line++) {

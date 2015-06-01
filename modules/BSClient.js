@@ -177,7 +177,8 @@ BSClient.prototype.render = function () {
                     if (board !== null) {
                         for (i = 0; i < board.length; i++) {
                             var button = boardEl.querySelector('button.button-buzzWord[data-id="' + board[i].id + '"]');
-                            button.className = button.className.replace(/btn-[a-z]+/, 'btn-' + (board[i].active ? 'primary' : 'default'));
+                            button.className = button.className.replace(/btn-[a-z]+/, 'btn-' + (board[i].active ? 'primary' :
+                                (this.game.words[board[i].id].active ? 'info' : 'default')));
                         }
                     }
                 }
@@ -359,7 +360,8 @@ BSClient.prototype.getLines = function (board) {
             line.push({
                 id: board[i].id,
                 word: board[i].word,
-                css_class: (board[i].active ? 'primary' : 'default')
+                css_class: (board[i].active ? 'primary' :
+                    (this.game.words[board[i].id].active ? 'info' : 'default'))
             });
         }
         lines.push(line);
