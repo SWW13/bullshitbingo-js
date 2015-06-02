@@ -323,7 +323,7 @@ BSServer.prototype.updateGame = function (game_id) {
 
     for (i = 0; i < this.games[game_id].words.length; i++) {
         this.games[game_id].words[i].id = i;
-        this.games[game_id].words[i].active = false;
+        this.games[game_id].words[i].buzzed = 0;
 
         words.push({
             id: i,
@@ -348,7 +348,7 @@ BSServer.prototype.updateGame = function (game_id) {
                 // activate other words
                 for(var j = 0; j < board.length; j++) {
                     if(board[j].active){
-                        this.games[game_id].words[board[j].id].active = true;
+                        this.games[game_id].words[board[j].id].buzzed++;
                     }
                 }
 
