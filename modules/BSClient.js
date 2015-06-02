@@ -126,8 +126,8 @@ BSClient.prototype.render = function () {
         switch (this.game.stage) {
             case 'words':
                 var wordlist = document.getElementById('wordlist-table');
-                if (wordlist === null) {
-                    content.innerHTML = templates['words'].render({last_words: this.last_words});
+                if (!wordlist) {
+                    content.innerHTML = templates['words'].render({});
                     wordlist = document.getElementById('wordlist-table');
 
                     var button_addLastWord = document.getElementsByClassName('button-addLastWord');
@@ -138,6 +138,11 @@ BSClient.prototype.render = function () {
                     }
                 }
                 wordlist.innerHTML = templates['wordlist'].render({words: this.game.words});
+
+                var last_words = document.getElementById('last-words');
+                if(last_words) {
+                    last_words.innerHTML = templates['last-words'].render({last_words: this.getLastWords()});
+                }
 
                 var count = document.getElementById('wordlist-count');
                 count.innerHTML = '(' + this.game.words.length + '/' + this.game.size * this.game.size + ')';
@@ -370,6 +375,28 @@ BSClient.prototype.getLines = function (board) {
     }
 
     return lines;
+};
+
+BSClient.prototype.getLastWords = function() {
+    var words = [];
+
+    for(var i = 0; i < this.last_words.length; i++) {
+        var word = this.last_words[i];
+        var found = false;
+
+        for(var n = 0; n < this.game.words.length; n++) {
+            if(word.word === this.game.words[n].word) {
+                found = true;
+                break;
+            }
+        }
+
+        if(!found) {
+            words.push(word);
+        }
+    }
+
+    return words;
 };
 
 module.exports = BSClient;

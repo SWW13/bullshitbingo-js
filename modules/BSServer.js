@@ -258,7 +258,7 @@ BSServer.prototype.addWord = function (user_id, game_id, word) {
         }
     }
     if (!found) {
-        this.last_words.unshift({word: word, user: this.players[user_id]});
+        this.last_words.unshift({word: word, user: user_id});
     }
     this.last_words = this.last_words.slice(0, 50);
 
