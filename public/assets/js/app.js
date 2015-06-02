@@ -145,8 +145,10 @@ BSClient.prototype.render = function () {
                     last_words.innerHTML = templates['last-words'].render({last_words: this.getLastWords()});
                 }
 
-                var count = document.getElementById('wordlist-count');
-                count.innerHTML = '(' + this.game.words.length + '/' + this.game.size * this.game.size + ')';
+                var count = document.getElementsByClassName('wordlist-count');
+                for (i = 0; i < count.length; i++) {
+                    count[i].innerHTML = '(' + this.game.words.length + '/' + this.game.size * this.game.size + ')';
+                }
 
                 var word = document.getElementById('word');
                 word.focus();
@@ -248,6 +250,7 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
 
     if (user_id !== null) {
         chat.innerHTML += templates['chat-row'].render({time: time, username: this.getUsername(user_id), message: message});
+        this.unread++;
     } else {
         chat.innerHTML += templates['chat-row-log'].render({time: time, message: message});
     }
@@ -255,7 +258,6 @@ BSClient.prototype.onChatMessage = function (user_id, message) {
     // scroll down
     chat.scrollTop = chat.scrollHeight;
 
-    this.unread++;
     this.renderNavbar();
 };
 
