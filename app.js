@@ -52,7 +52,9 @@ d.run(function () {
         sendEvent = bus.on('messageSend', function (msg) {
             if (msg.receiver === null || (user !== null && msg.receiver === user.id)) {
                 try {
-                    conn.send(msg.toString());
+                    conn.send(msg.toString(), function(err) {
+                        console.error('send failed.');
+                    });
                 } catch (ex) {
                     console.error('could not send message.');
                     console.dir(ex);
